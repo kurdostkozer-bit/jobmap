@@ -9,6 +9,12 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // HTTP Request logging - BEFORE anything else
+  app.use((req, res, next) => {
+    console.log(`[HTTP] ${req.method} ${req.originalUrl}`);
+    next();
+  });
+
   // Security middleware
   app.use(helmet());
   app.use(compression());
