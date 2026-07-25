@@ -125,7 +125,7 @@ export class AuthService {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role as 'seeker' | 'employer',
+      role: user.role as 'seeker' | 'employer' | 'recruitment_agency' | 'admin',
       avatarUrl: user.avatarUrl,
       createdAt: user.createdAt,
     };

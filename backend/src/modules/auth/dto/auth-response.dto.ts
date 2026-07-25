@@ -3,7 +3,7 @@ export class UserResponseDto {
   email!: string;
   firstName!: string;
   lastName!: string;
-  role!: 'seeker' | 'employer';
+  role!: 'seeker' | 'employer' | 'recruitment_agency' | 'admin';
   avatarUrl?: string;
   createdAt!: Date;
 }

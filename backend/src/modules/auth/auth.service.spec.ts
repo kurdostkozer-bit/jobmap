@@ -23,7 +23,7 @@ describe('AuthService', () => {
     passwordHash: 'hashed-password',
     firstName: 'أحمد',
     lastName: 'محمد',
-    role: 'seeker',
+    role: 'seeker' as 'seeker' | 'employer' | 'recruitment_agency' | 'admin',
     avatarUrl: undefined,
     isActive: true,
     createdAt: new Date(),
@@ -35,7 +35,7 @@ describe('AuthService', () => {
     password: 'TestPassword123',
     firstName: 'علي',
     lastName: 'حسن',
-    role: 'employer',
+    role: 'employer' as 'seeker' | 'employer' | 'recruitment_agency' | 'admin',
   };
 
   const mockLoginDto: LoginDto = {

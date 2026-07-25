@@ -208,6 +208,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           textDirection: TextDirection.rtl,
                         ),
                       ),
+                      DropdownMenuItem(
+                        value: 'recruitment_agency',
+                        child: Text(
+                          'شركة توظيف',
+                          textDirection: TextDirection.rtl,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'admin',
+                        child: Text(
+                          'مسؤول النظام',
+                          textDirection: TextDirection.rtl,
+                        ),
+                      ),
                     ],
                     onChanged: isLoading
                         ? null

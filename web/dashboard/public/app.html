@@ -261,6 +261,8 @@
                     <select id="registerRole" required>
                         <option value="seeker">طالب وظيفة</option>
                         <option value="employer">صاحب عمل</option>
+                        <option value="recruitment_agency">شركة توظيف</option>
+                        <option value="admin">مسؤول النظام</option>
                     </select>
                 </div>
 
@@ -385,7 +387,14 @@
             document.getElementById('dashboardSection').classList.add('active');
             document.getElementById('userName').textContent = 'مرحباً بك، ' + user.firstName + ' ' + user.lastName;
             document.getElementById('userEmail').textContent = user.email;
-            document.getElementById('userRole').textContent = user.role === 'seeker' ? 'طالب وظيفة' : 'صاحب عمل';
+            
+            const roleMap = {
+                'seeker': 'طالب وظيفة',
+                'employer': 'صاحب عمل',
+                'recruitment_agency': 'شركة توظيف',
+                'admin': 'مسؤول النظام'
+            };
+            document.getElementById('userRole').textContent = roleMap[user.role] || user.role;
         }
 
         // Logout

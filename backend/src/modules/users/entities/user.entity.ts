@@ -18,7 +18,7 @@ export class User {
   lastName!: string;
 
   @Column({ default: 'seeker' })
-  role!: string; // seeker, employer, admin
+  role!: 'seeker' | 'employer' | 'recruitment_agency' | 'admin';
 
   @Column({ nullable: true })
   avatarUrl?: string;

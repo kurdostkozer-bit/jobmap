@@ -191,6 +191,8 @@ function RegisterPage() {
             >
               <option value="seeker">طالب وظيفة</option>
               <option value="employer">صاحب عمل</option>
+              <option value="recruitment_agency">شركة توظيف</option>
+              <option value="admin">مسؤول النظام</option>
             </select>
           </div>
 

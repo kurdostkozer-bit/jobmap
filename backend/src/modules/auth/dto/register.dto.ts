@@ -19,6 +19,8 @@ export class RegisterDto {
   @MaxLength(50, { message: 'اسم العائلة يجب أن يكون 50 حرف كحد أقصى' })
   lastName!: string;
 
-  @IsEnum(['seeker', 'employer'], { message: 'الدور يجب أن يكون seeker أو employer' })
-  role!: 'seeker' | 'employer';
+  @IsEnum(['seeker', 'employer', 'recruitment_agency', 'admin'], { 
+    message: 'نوع التسجيل يجب أن يكون seeker أو employer أو recruitment_agency أو admin' 
+  })
+  role!: 'seeker' | 'employer' | 'recruitment_agency' | 'admin';
 }
