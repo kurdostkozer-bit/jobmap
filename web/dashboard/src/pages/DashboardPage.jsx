@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../features/auth/slices/authSlice';
 import { DashboardLayout } from '../components/DashboardLayout/DashboardLayout';
 import { StatsCard } from '../components/StatsCard/StatsCard';
 import { JobListings } from '../components/JobListings/JobListings';
+import { Applicants } from '../components/Applicants/Applicants';
 
 function DashboardPage() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector(state => state.auth);
   const [activeTab, setActiveTab] = useState('overview');
@@ -144,10 +143,7 @@ function DashboardPage() {
 
       {/* Applicants Tab */}
       {activeTab === 'applicants' && (
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <h2>المتقدمون</h2>
-          <p style={{ color: '#718096' }}>سيتم بناؤها قريباً...</p>
-        </div>
+        <Applicants />
       )}
 
       {/* Company Tab */}
