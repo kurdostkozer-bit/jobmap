@@ -1,0 +1,261 @@
+.analytics-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.analytics-header {
+  padding: 25px;
+  border-bottom: 1px solid #e1e8ed;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.analytics-header h2 {
+  margin: 0 0 5px 0;
+  font-size: 24px;
+}
+
+.analytics-header p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.analytics-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #718096;
+  font-size: 14px;
+  background: white;
+  border-radius: 12px;
+}
+
+/* Charts Grid */
+.charts-grid {
+  padding: 25px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 25px;
+}
+
+.chart-card {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.3s;
+}
+
+.chart-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.chart-card h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  color: #1a202c;
+  font-weight: 600;
+}
+
+.chart-subtitle {
+  margin: 0 0 15px 0;
+  font-size: 12px;
+  color: #718096;
+}
+
+.chart-full-width {
+  grid-column: 1 / -1;
+}
+
+/* Custom Tooltip */
+.custom-tooltip {
+  background: white;
+  padding: 10px 12px;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tooltip p {
+  margin: 0;
+  font-size: 12px;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+/* Recharts Style Overrides */
+.recharts-text {
+  font-family: inherit;
+  direction: rtl;
+}
+
+.recharts-pie-label-text {
+  font-size: 12px !important;
+  fill: #2d3748 !important;
+}
+
+.recharts-legend-wrapper {
+  direction: rtl;
+  text-align: right;
+}
+
+.recharts-legend-item {
+  margin-right: 20px;
+}
+
+/* Summary Cards */
+.summary-cards {
+  padding: 0 25px 25px 25px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border: 1px solid #e1e8ed;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.summary-card:hover {
+  border-color: #667eea;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.summary-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.summary-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.summary-value {
+  margin: 0 0 5px 0;
+  font-size: 28px;
+  color: #1a202c;
+  font-weight: 700;
+}
+
+.summary-change {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.summary-change.positive {
+  color: #48bb78;
+}
+
+.summary-change.negative {
+  color: #f56565;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  }
+
+  .summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-header {
+    padding: 15px 20px;
+  }
+
+  .analytics-header h2 {
+    font-size: 18px;
+  }
+
+  .analytics-header p {
+    font-size: 12px;
+  }
+
+  .charts-grid {
+    padding: 15px;
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .chart-card {
+    padding: 15px;
+  }
+
+  .chart-card h3 {
+    font-size: 14px;
+  }
+
+  .chart-subtitle {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .summary-cards {
+    padding: 0 15px 15px 15px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .summary-card {
+    padding: 15px;
+  }
+
+  .summary-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .summary-value {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .charts-grid {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .chart-card {
+    padding: 12px;
+  }
+
+  .summary-cards {
+    padding: 0 12px 12px 12px;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .summary-card {
+    padding: 12px;
+  }
+
+  .summary-icon {
+    font-size: 20px;
+  }
+
+  .summary-value {
+    font-size: 18px;
+  }
+
+  .summary-change {
+    font-size: 11px;
+  }
+}

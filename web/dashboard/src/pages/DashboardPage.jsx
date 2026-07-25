@@ -6,6 +6,7 @@ import { StatsCard } from '../components/StatsCard/StatsCard';
 import { JobListings } from '../components/JobListings/JobListings';
 import { Applicants } from '../components/Applicants/Applicants';
 import { JobsMap } from '../components/JobsMap/JobsMap';
+import { Analytics } from '../components/Analytics/Analytics';
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -145,6 +146,11 @@ function DashboardPage() {
       {/* Applicants Tab */}
       {activeTab === 'applicants' && (
         <Applicants />
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <Analytics />
       )}
 
       {/* Maps Tab */}
