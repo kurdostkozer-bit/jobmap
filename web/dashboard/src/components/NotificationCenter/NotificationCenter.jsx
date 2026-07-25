@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { useSocket } from '../../core/socket/useSocket';
 import './NotificationCenter.css';
 
 export const NotificationCenter = () => {
-  const { user } = useSelector((state) => state.auth);
-  const { subscribe } = useSocket(user?.id);
+  const { subscribe } = useSocket(); // No userId parameter - gets from token
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
-    if (!user?.id) return;
-
     // Subscribe to notifications
     const unsubscribe = subscribe('notification', (notification) => {
+      console.log('📬 New notification in UI:', notification);
       setNotifications((prev) => [notification, ...prev]);
       // Auto-hide after 5 seconds
       setTimeout(() => {
@@ -24,15 +21,15 @@ export const NotificationCenter = () => {
     });
 
     return unsubscribe;
-  }, [user?.id, subscribe]);
+  }, [subscribe]);
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'new_application':
+      case 'application.submitted':
         return '📝';
-      case 'application_accepted':
+      case 'application.accepted':
         return '✅';
-      case 'application_rejected':
+      case 'application.rejected':
         return '❌';
       default:
         return '🔔';

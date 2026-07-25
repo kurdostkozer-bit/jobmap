@@ -7,15 +7,26 @@ class SocketService {
   }
 
   /**
-   * Connect to WebSocket server
+   * Connect to WebSocket server with JWT auth
+   * @param {string} serverUrl - Backend URL (e.g., https://jobmap-backend-57v5.onrender.com)
+   * @param {string} token - JWT token from localStorage
    */
-  connect(serverUrl, userId) {
+  connect(serverUrl, token) {
     if (this.socket?.connected) {
-      console.log('Socket already connected');
+      console.log('🔌 Socket already connected');
       return;
     }
 
-    this.socket = io(serverUrl, {
+    if (!token) {
+      console.error('❌ No JWT token provided for WebSocket connection');
+      return;
+    }
+
+    // Connect to /notifications namespace with JWT auth
+    this.socket = io(`${serverUrl}/notifications`, {
+      auth: {
+        token: token,
+      },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -23,11 +34,7 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ Connected to WebSocket');
-      // Register user for targeted notifications
-      if (userId) {
-        this.socket.emit('register-user', { userId });
-      }
+      console.log('✅ Connected to WebSocket notifications namespace');
     });
 
     this.socket.on('disconnect', () => {
@@ -35,10 +42,10 @@ class SocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('❌ Connection error:', error);
+      console.error('❌ WebSocket connection error:', error);
     });
 
-    // Listen to notifications
+    // Listen to notifications from server
     this.socket.on('notification', (notification) => {
       console.log('📬 Notification received:', notification);
       this._triggerListeners('notification', notification);
@@ -52,6 +59,7 @@ class SocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      console.log('🔌 WebSocket disconnected');
     }
   }
 

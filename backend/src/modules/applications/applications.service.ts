@@ -3,14 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from './entities/application.entity';
 import { CreateApplicationDTO } from './dto/create-application.dto';
-import { NotificationsGateway } from '../notifications/gateways/notifications.gateway';
+import { NotificationsServiceImpl } from '../notifications/services/notifications.service';
+import { NotificationEvents } from '../notifications/events/notification.events';
 
 @Injectable()
 export class ApplicationsService {
   constructor(
     @InjectRepository(Application)
     private applicationsRepository: Repository<Application>,
-    private notificationsGateway: NotificationsGateway,
+    private notificationsService: NotificationsServiceImpl,
   ) {}
 
   async create(userId: string, createApplicationDTO: CreateApplicationDTO): Promise<Application> {
@@ -35,11 +36,11 @@ export class ApplicationsService {
       relations: ['job', 'job.company', 'user'],
     });
 
-    // Send notification to job's company owner
-    this.notificationsGateway.sendNotificationToUser(
+    // Send notification to job's company owner via NotificationsService
+    await this.notificationsService.notifyUser(
       fullApplication.job.company.ownerId,
       {
-        type: 'new_application',
+        type: NotificationEvents.APPLICATION_SUBMITTED,
         title: 'تقديم طلب جديد',
         message: `${fullApplication.user.firstName} ${fullApplication.user.lastName} تقدم بطلب للوظيفة "${fullApplication.job.title}"`,
         data: {
@@ -91,10 +92,10 @@ export class ApplicationsService {
     
     const updatedApplication = await this.applicationsRepository.save(application);
 
-    // Send notification to applicant based on status change
+    // Send notification to applicant based on status change via NotificationsService
     if (status === 'accepted' && oldStatus !== 'accepted') {
-      this.notificationsGateway.sendNotificationToUser(application.userId, {
-        type: 'application_accepted',
+      await this.notificationsService.notifyUser(application.userId, {
+        type: NotificationEvents.APPLICATION_ACCEPTED,
         title: 'تم قبول طلبك!',
         message: `تم قبول طلبك للوظيفة "${application.job.title}" من قبل ${application.job.company.name}`,
         data: {
@@ -105,8 +106,8 @@ export class ApplicationsService {
         },
       });
     } else if (status === 'rejected' && oldStatus !== 'rejected') {
-      this.notificationsGateway.sendNotificationToUser(application.userId, {
-        type: 'application_rejected',
+      await this.notificationsService.notifyUser(application.userId, {
+        type: NotificationEvents.APPLICATION_REJECTED,
         title: 'للأسف، تم رفض طلبك',
         message: `تم رفض طلبك للوظيفة "${application.job.title}" من قبل ${application.job.company.name}`,
         data: {

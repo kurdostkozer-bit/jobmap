@@ -7,9 +7,11 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
+  namespace: '/notifications',
   cors: {
     origin: process.env.FRONTEND_URL || '*',
     credentials: true,
@@ -22,33 +24,47 @@ export class NotificationsGateway
   server: Server;
 
   private readonly logger = new Logger('NotificationsGateway');
-  private userSockets: Map<string, string> = new Map(); // userId -> socketId
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+  constructor(private jwtService: JwtService) {}
+
+  async handleConnection(client: Socket) {
+    try {
+      // Extract JWT from query params or headers
+      const token =
+        client.handshake.auth.token ||
+        client.handshake.headers.authorization?.replace('Bearer ', '');
+
+      if (!token) {
+        this.logger.warn(`⚠️ Connection rejected: No token provided`);
+        client.disconnect();
+        return;
+      }
+
+      // Verify JWT
+      const payload = this.jwtService.verify(token);
+      const userId = payload.userId;
+
+      // Join user-specific room
+      client.join(`user:${userId}`);
+      client.data.userId = userId;
+
+      this.logger.log(`✅ User ${userId} connected: ${client.id}`);
+    } catch (error) {
+      this.logger.error(`❌ Connection error: ${error.message}`);
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
-    // Remove user from map
-    this.userSockets.forEach((socketId, userId) => {
-      if (socketId === client.id) {
-        this.userSockets.delete(userId);
-      }
-    });
-  }
-
-  @SubscribeMessage('register-user')
-  handleUserRegister(
-    @ConnectedSocket() client: Socket,
-    data: { userId: string },
-  ) {
-    this.userSockets.set(data.userId, client.id);
-    this.logger.log(`User registered: ${data.userId} -> ${client.id}`);
+    if (client.data.userId) {
+      this.logger.log(`User ${client.data.userId} disconnected: ${client.id}`);
+    } else {
+      this.logger.log(`Client disconnected: ${client.id}`);
+    }
   }
 
   /**
-   * Send notification to a specific user
+   * Send notification to a specific user (via room)
    */
   sendNotificationToUser(
     userId: string,
@@ -60,16 +76,11 @@ export class NotificationsGateway
       timestamp?: Date;
     },
   ) {
-    const socketId = this.userSockets.get(userId);
-    if (socketId) {
-      this.server.to(socketId).emit('notification', {
-        ...notification,
-        timestamp: notification.timestamp || new Date(),
-      });
-      this.logger.log(`Notification sent to user: ${userId}`);
-    } else {
-      this.logger.warn(`User ${userId} is not connected`);
-    }
+    this.server.to(`user:${userId}`).emit('notification', {
+      ...notification,
+      timestamp: notification.timestamp || new Date(),
+    });
+    this.logger.log(`📬 Notification sent to user: ${userId}`);
   }
 
   /**
@@ -90,7 +101,7 @@ export class NotificationsGateway
   }
 
   /**
-   * Broadcast notification to all connected users
+   * Broadcast to all connected users
    */
   broadcastNotification(notification: {
     type: string;
@@ -102,5 +113,6 @@ export class NotificationsGateway
       ...notification,
       timestamp: new Date(),
     });
+    this.logger.log(`📢 Broadcast notification sent`);
   }
 }
