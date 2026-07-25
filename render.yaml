@@ -10,6 +10,14 @@ services:
       - key: NODE_ENV
         value: production
 
+  - type: static_site
+    name: jobmap-frontend
+    staticPublishPath: web/dashboard/build
+    buildCommand: cd web/dashboard && npm install && npm run build
+    routes:
+      - path: /*
+        destination: /index.html
+
 databases:
   - name: jobmap-db
     databaseName: jobmap_ssqr
