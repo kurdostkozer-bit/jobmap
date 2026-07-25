@@ -45,7 +45,7 @@ import { Governorate, District, Neighborhood } from './modules/locations/entitie
       migrations: [
         'dist/database/migrations/**/*.js',
       ],
-      synchronize: false,
+      synchronize: true,
       logging: process.env.DB_LOGGING === 'true',
     }),
     AuthModule,
