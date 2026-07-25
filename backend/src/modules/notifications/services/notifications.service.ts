@@ -99,6 +99,20 @@ export class NotificationsServiceImpl {
   }
 
   /**
+   * Get user's notifications (for Controller)
+   */
+  async findByUserId(userId: string, unread: boolean = false): Promise<Notification[]> {
+    const query = this.notificationsRepository.createQueryBuilder('notification')
+      .where('notification.userId = :userId', { userId });
+
+    if (unread) {
+      query.andWhere('notification.isRead = false');
+    }
+
+    return query.orderBy('notification.createdAt', 'DESC').getMany();
+  }
+
+  /**
    * Mark notification as read
    */
   async markAsRead(notificationId: string): Promise<Notification> {
@@ -115,9 +129,26 @@ export class NotificationsServiceImpl {
   }
 
   /**
+   * Mark all notifications as read for a user
+   */
+  async markAllAsRead(userId: string): Promise<void> {
+    await this.notificationsRepository.update(
+      { userId },
+      { isRead: true },
+    );
+  }
+
+  /**
    * Delete notification
    */
   async deleteNotification(notificationId: string): Promise<void> {
+    await this.notificationsRepository.delete(notificationId);
+  }
+
+  /**
+   * Delete notification (for Controller)
+   */
+  async delete(notificationId: string): Promise<void> {
     await this.notificationsRepository.delete(notificationId);
   }
 }

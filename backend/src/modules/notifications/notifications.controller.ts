@@ -8,13 +8,17 @@ import {
   UseGuards,
   Request,
   HttpCode,
+  Inject,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { NotificationsService } from './notifications.service';
+import { NotificationsServiceImpl } from './services/notifications.service';
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private notificationsService: NotificationsService) {}
+  constructor(
+    @Inject('NotificationsService')
+    private notificationsService: NotificationsServiceImpl,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)

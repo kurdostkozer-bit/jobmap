@@ -15,7 +15,15 @@ import { Notification } from './entities/notification.entity';
     }),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsServiceImpl, NotificationsGateway, WebSocketGuard],
+  providers: [
+    NotificationsServiceImpl,
+    NotificationsGateway,
+    WebSocketGuard,
+    {
+      provide: 'NotificationsService',
+      useClass: NotificationsServiceImpl,
+    },
+  ],
   exports: [NotificationsServiceImpl, NotificationsGateway, WebSocketGuard],
 })
 export class NotificationsModule {}
