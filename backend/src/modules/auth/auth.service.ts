@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,8 @@ import { AuthResponseDto, UserResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger('AuthService');
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -16,11 +18,13 @@ export class AuthService {
   ) {}
 
   async register(data: RegisterDto): Promise<AuthResponseDto> {
+    this.logger.log('🔄 Starting registration for:', data.email);
     const existing = await this.usersRepository.findOne({
       where: { email: data.email },
     });
 
     if (existing) {
+      this.logger.warn('⚠️ Email already registered:', data.email);
       throw new ConflictException('البريد الإلكتروني مسجل بالفعل');
     }
 
@@ -34,25 +38,30 @@ export class AuthService {
     });
 
     await this.usersRepository.save(user);
+    this.logger.log('✅ User registered successfully:', data.email);
 
     return this.generateTokens(user);
   }
 
   async login(email: string, password: string): Promise<AuthResponseDto> {
+    this.logger.log('🔐 Attempting login for:', email);
     const user = await this.usersRepository.findOne({
       where: { email },
     });
 
     if (!user) {
+      this.logger.warn('❌ User not found:', email);
       throw new UnauthorizedException('البريد الإلكتروني أو كلمة المرور غير صحيحة');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
+      this.logger.warn('❌ Invalid password for user:', email);
       throw new UnauthorizedException('البريد الإلكتروني أو كلمة المرور غير صحيحة');
     }
 
+    this.logger.log('✅ Login successful for:', email);
     return this.generateTokens(user);
   }
 

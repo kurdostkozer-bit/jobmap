@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtGuard } from './guards/jwt.guard';
 import { RegisterDto } from './dto/register.dto';
@@ -7,17 +7,21 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger('AuthController');
+
   constructor(private authService: AuthService) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+    this.logger.log('📝 Register attempt:', { email: registerDto.email });
     return this.authService.register(registerDto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+    this.logger.log('🔑 Login attempt:', { email: loginDto.email });
     return this.authService.login(loginDto.email, loginDto.password);
   }
 

@@ -14,8 +14,10 @@ async function bootstrap() {
   app.use(compression());
 
   // CORS configuration
+  const corsOrigin = process.env.CORS_ORIGIN?.split(',') || '*';
+  console.log('🔐 CORS configured for:', corsOrigin);
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: corsOrigin,
     credentials: true,
   });
 

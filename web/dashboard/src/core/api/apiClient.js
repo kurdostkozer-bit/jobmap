@@ -16,18 +16,33 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('auth_token');
+        console.log(`📤 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, {
+          hasToken: !!token,
+          data: config.data,
+        });
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => {
+        console.error('❌ Request Interceptor Error:', error);
+        return Promise.reject(error);
+      }
     );
 
     // Add response interceptor with automatic token refresh
     this.client.interceptors.response.use(
-      (response) => response.data,
+      (response) => {
+        console.log(`📥 API Response: ${response.status}`, response.data);
+        return response.data;
+      },
       async (error) => {
+        console.error('❌ Response Error:', {
+          status: error.response?.status,
+          message: error.response?.data?.message,
+          url: error.config?.url,
+        });
         const originalRequest = error.config;
 
         // If 401 and not already retried
