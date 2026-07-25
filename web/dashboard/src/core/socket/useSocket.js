@@ -1,17 +1,21 @@
 import { useEffect, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import socketService from './socketService';
 
 /**
  * Hook for using Socket.IO in React components
- * Connects with JWT token from localStorage
+ * Connects with JWT token from Redux auth state (preferred over localStorage)
+ * Falls back to localStorage if Redux state not available
  */
 export const useSocket = () => {
+  const { isAuthenticated, token } = useSelector((state) => state.auth);
+
   useEffect(() => {
-    // Get JWT token from localStorage
-    const token = localStorage.getItem('auth_token');
+    // Get JWT token - preferring Redux state over localStorage
+    const authToken = token || localStorage.getItem('auth_token');
     
-    if (!token) {
-      console.warn('⚠️ No auth token found, skipping WebSocket connection');
+    if (!authToken || !isAuthenticated) {
+      console.warn('⚠️ No auth token or not authenticated, skipping WebSocket connection');
       return;
     }
 
@@ -20,13 +24,13 @@ export const useSocket = () => {
     const socketUrl = apiUrl.replace('/api', ''); // Remove /api suffix
 
     console.log('🔌 Connecting to socket server:', socketUrl);
-    socketService.connect(socketUrl, token);
+    socketService.connect(socketUrl, authToken);
 
     return () => {
       // Optional: disconnect on unmount
       // socketService.disconnect();
     };
-  }, []);
+  }, [isAuthenticated, token]);
 
   const subscribe = useCallback((event, callback) => {
     return socketService.subscribe(event, callback);

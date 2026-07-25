@@ -1,0 +1,23 @@
+{
+  "name": "@jobmap/shared",
+  "version": "1.0.0",
+  "description": "Shared types and constants between Backend and Frontend",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "events"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "jobmap",
+    "shared",
+    "events",
+    "websocket"
+  ],
+  "author": "",
+  "license": "MIT"
+}

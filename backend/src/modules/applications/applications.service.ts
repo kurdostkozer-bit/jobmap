@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Application } from './entities/application.entity';
 import { CreateApplicationDTO } from './dto/create-application.dto';
 import { NotificationsServiceImpl } from '../notifications/services/notifications.service';
-import { NotificationEvents } from '../notifications/events/notification.events';
+import { NotificationEventTypes } from '@shared/events/index';
 
 @Injectable()
 export class ApplicationsService {
@@ -40,7 +40,7 @@ export class ApplicationsService {
     await this.notificationsService.notifyUser(
       fullApplication.job.company.ownerId,
       {
-        type: NotificationEvents.APPLICATION_SUBMITTED,
+        type: NotificationEventTypes.APPLICATION_SUBMITTED,
         title: 'تقديم طلب جديد',
         message: `${fullApplication.user.firstName} ${fullApplication.user.lastName} تقدم بطلب للوظيفة "${fullApplication.job.title}"`,
         data: {
@@ -95,7 +95,7 @@ export class ApplicationsService {
     // Send notification to applicant based on status change via NotificationsService
     if (status === 'accepted' && oldStatus !== 'accepted') {
       await this.notificationsService.notifyUser(application.userId, {
-        type: NotificationEvents.APPLICATION_ACCEPTED,
+        type: NotificationEventTypes.APPLICATION_ACCEPTED,
         title: 'تم قبول طلبك!',
         message: `تم قبول طلبك للوظيفة "${application.job.title}" من قبل ${application.job.company.name}`,
         data: {
@@ -107,7 +107,7 @@ export class ApplicationsService {
       });
     } else if (status === 'rejected' && oldStatus !== 'rejected') {
       await this.notificationsService.notifyUser(application.userId, {
-        type: NotificationEvents.APPLICATION_REJECTED,
+        type: NotificationEventTypes.APPLICATION_REJECTED,
         title: 'للأسف، تم رفض طلبك',
         message: `تم رفض طلبك للوظيفة "${application.job.title}" من قبل ${application.job.company.name}`,
         data: {

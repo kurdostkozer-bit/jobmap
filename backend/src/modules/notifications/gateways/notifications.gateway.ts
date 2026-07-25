@@ -5,10 +5,17 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   ConnectedSocket,
+  MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { WebSocketGuard } from '../guards/websocket.guard';
+import {
+  NotificationEventTypes,
+  WebSocketEvents,
+  WebSocketConfig,
+  INotificationAck,
+} from '@shared/events/index';
 
 @WebSocketGateway({
   namespace: '/notifications',
@@ -16,6 +23,10 @@ import { JwtService } from '@nestjs/jwt';
     origin: process.env.FRONTEND_URL || '*',
     credentials: true,
   },
+  transports: ['websocket', 'polling'],
+  reconnection: WebSocketConfig.RECONNECTION,
+  reconnectionDelay: WebSocketConfig.RECONNECTION_DELAY,
+  reconnectionDelayMax: WebSocketConfig.RECONNECTION_DELAY_MAX,
 })
 export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -25,62 +36,76 @@ export class NotificationsGateway
 
   private readonly logger = new Logger('NotificationsGateway');
 
-  constructor(private jwtService: JwtService) {}
+  @UseGuards(WebSocketGuard)
+  handleConnection(client: Socket) {
+    const userId = client.data.userId;
 
-  async handleConnection(client: Socket) {
-    try {
-      // Extract JWT from query params or headers
-      const token =
-        client.handshake.auth.token ||
-        client.handshake.headers.authorization?.replace('Bearer ', '');
+    // Join user-specific room
+    client.join(`user:${userId}`);
 
-      if (!token) {
-        this.logger.warn(`⚠️ Connection rejected: No token provided`);
-        client.disconnect();
-        return;
-      }
-
-      // Verify JWT
-      const payload = this.jwtService.verify(token);
-      const userId = payload.userId;
-
-      // Join user-specific room
-      client.join(`user:${userId}`);
-      client.data.userId = userId;
-
-      this.logger.log(`✅ User ${userId} connected: ${client.id}`);
-    } catch (error) {
-      this.logger.error(`❌ Connection error: ${error.message}`);
-      client.disconnect();
-    }
+    this.logger.log(`✅ User ${userId} connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    if (client.data.userId) {
-      this.logger.log(`User ${client.data.userId} disconnected: ${client.id}`);
-    } else {
-      this.logger.log(`Client disconnected: ${client.id}`);
+    const userId = client.data.userId;
+    if (userId) {
+      this.logger.log(`❌ User ${userId} disconnected: ${client.id}`);
     }
   }
 
   /**
+   * Listen for acknowledgment from client
+   */
+  @SubscribeMessage(WebSocketEvents.NOTIFICATION_ACK_SEND)
+  handleNotificationAck(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { notificationId: string },
+  ) {
+    this.logger.log(
+      `✅ Notification ACK received from ${client.data.userId}: ${data.notificationId}`,
+    );
+    // You can store this in cache or DB if needed (e.g., mark as delivered)
+  }
+
+  /**
+   * Emit heartbeat/ping to keep connection alive
+   */
+  @SubscribeMessage(WebSocketEvents.PING)
+  handlePing(
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.emit(WebSocketEvents.PONG, { timestamp: new Date() });
+  }
+
+  /**
    * Send notification to a specific user (via room)
+   * @param userId User to notify
+   * @param notification Notification payload
+   * @returns Notification ID for tracking
    */
   sendNotificationToUser(
     userId: string,
     notification: {
-      type: string;
+      type: NotificationEventTypes;
       title: string;
       message: string;
       data?: any;
       timestamp?: Date;
     },
-  ) {
-    this.server.to(`user:${userId}`).emit('notification', {
+  ): string {
+    const notificationId = `${userId}-${Date.now()}`;
+
+    this.server.to(`user:${userId}`).emit(WebSocketEvents.NOTIFICATION, {
+      id: notificationId,
       ...notification,
       timestamp: notification.timestamp || new Date(),
     });
-    this.logger.log(`📬 Notification sent to user: ${userId}`);
+
+    this.logger.log(
+      `📬 Notification sent to user: ${userId} (ID: ${notificationId})`,
+    );
+
+    return notificationId;
   }
 
   /**
@@ -89,7 +114,7 @@ export class NotificationsGateway
   sendNotificationToUsers(
     userIds: string[],
     notification: {
-      type: string;
+      type: NotificationEventTypes;
       title: string;
       message: string;
       data?: any;
@@ -104,15 +129,17 @@ export class NotificationsGateway
    * Broadcast to all connected users
    */
   broadcastNotification(notification: {
-    type: string;
+    type: NotificationEventTypes;
     title: string;
     message: string;
     data?: any;
   }) {
-    this.server.emit('notification', {
+    this.server.emit(WebSocketEvents.NOTIFICATION, {
+      id: `broadcast-${Date.now()}`,
       ...notification,
       timestamp: new Date(),
     });
+
     this.logger.log(`📢 Broadcast notification sent`);
   }
 }
