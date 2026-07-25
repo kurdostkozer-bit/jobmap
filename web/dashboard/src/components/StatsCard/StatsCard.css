@@ -1,0 +1,83 @@
+.stats-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-right: 4px solid;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stats-card.stats-blue {
+  border-right-color: #667eea;
+}
+
+.stats-card.stats-green {
+  border-right-color: #48bb78;
+}
+
+.stats-card.stats-orange {
+  border-right-color: #ed8936;
+}
+
+.stats-card.stats-red {
+  border-right-color: #f56565;
+}
+
+.stats-icon {
+  font-size: 40px;
+  min-width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7fafc;
+  border-radius: 10px;
+}
+
+.stats-content {
+  flex-grow: 1;
+}
+
+.stats-title {
+  margin: 0;
+  font-size: 13px;
+  color: #718096;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stats-value {
+  margin: 8px 0 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.stats-subtext {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #a0aec0;
+}
+
+.stats-trend {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f0fff4;
+  color: #22543d;
+}
+
+.stats-trend.down {
+  background: #fff5f5;
+  color: #742a2a;
+}
