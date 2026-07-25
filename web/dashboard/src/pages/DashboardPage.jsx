@@ -2,6 +2,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/slices/authSlice';
+import { NotificationCenter } from '../components/NotificationCenter/NotificationCenter';
 
 function DashboardPage() {
   const dispatch = useDispatch();
@@ -22,20 +23,23 @@ function DashboardPage() {
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>JobMap Dashboard</h1>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-          }}
-        >
-          تسجيل الخروج
-        </button>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          <NotificationCenter />
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            تسجيل الخروج
+          </button>
+        </div>
       </div>
       
       <div style={{ 
