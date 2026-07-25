@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Application } from './entities/application.entity';
 import { CreateApplicationDTO } from './dto/create-application.dto';
 import { NotificationsServiceImpl } from '../notifications/services/notifications.service';
-import { NotificationEventTypes } from '@shared/events/index';
+import { NotificationEventTypes } from '../../shared/events/index';
 
 @Injectable()
 export class ApplicationsService {

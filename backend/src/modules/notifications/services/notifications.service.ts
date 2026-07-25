@@ -6,7 +6,7 @@ import { NotificationsGateway } from '../gateways/notifications.gateway';
 import {
   NotificationEventTypes,
   INotificationPayload,
-} from '@shared/events/index';
+} from '../../../shared/events/index';
 
 @Injectable()
 export class NotificationsServiceImpl {

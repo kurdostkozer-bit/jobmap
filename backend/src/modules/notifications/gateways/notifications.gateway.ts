@@ -15,7 +15,7 @@ import {
   WebSocketEvents,
   WebSocketConfig,
   INotificationAck,
-} from '@shared/events/index';
+} from '../../../shared/events/index';
 
 @WebSocketGateway({
   namespace: '/notifications',
