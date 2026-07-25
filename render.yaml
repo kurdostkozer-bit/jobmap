@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: jobmap-backend
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: jobmap-db
+          property: host
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_USER
+        fromDatabase:
+          name: jobmap-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: jobmap-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: jobmap-db
+          property: database
+
+databases:
+  - name: jobmap-db
+    databaseName: jobmap_ssqr
+    user: jobmap_user
+    region: frankfurt
