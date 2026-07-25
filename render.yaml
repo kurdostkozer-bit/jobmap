@@ -4,8 +4,8 @@ services:
     env: node
     region: frankfurt
     plan: free
-    buildCommand: rm -rf node_modules && npm ci && npm run build
-    startCommand: cd backend && npm start
+    buildCommand: cd backend && rm -rf node_modules && npm ci && npm run build
+    startCommand: node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
