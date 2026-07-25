@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "npx nest build",
     "start": "node dist/main.js",
     "test": "jest",
     "test:cov": "jest --coverage",
