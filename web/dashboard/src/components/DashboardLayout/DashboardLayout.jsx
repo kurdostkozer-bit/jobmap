@@ -28,6 +28,7 @@ export const DashboardLayout = ({ children, onTabChange }) => {
     { id: 'overview', label: 'نظرة عامة', icon: '📊', path: 'overview' },
     { id: 'jobs', label: 'الوظائف', icon: '💼', path: 'jobs' },
     { id: 'applicants', label: 'المتقدمون', icon: '👥', path: 'applicants' },
+    { id: 'maps', label: 'الخريطة', icon: '🗺️', path: 'maps' },
     { id: 'company', label: 'الشركة', icon: '🏢', path: 'company' },
   ];
 
