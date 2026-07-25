@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './JobListings.css';
+import { JobModal } from '../JobModal/JobModal';
 
 export const JobListings = () => {
   const [jobs, setJobs] = useState([]);
@@ -9,6 +10,7 @@ export const JobListings = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Mock jobs data
   useEffect(() => {
@@ -115,135 +117,169 @@ export const JobListings = () => {
       : { label: 'مغلق', color: '#f56565', bg: '#fff5f5' };
   };
 
+  const handleJobSubmit = (formData) => {
+    // Add new job to the list
+    const newJob = {
+      id: jobs.length + 1,
+      ...formData,
+      salary: `${formData.salaryMin}-${formData.salaryMax}`,
+      currency: 'USD',
+      applicants: 0,
+      status: 'active',
+      postedDate: new Date().toISOString().split('T')[0],
+      views: 0,
+    };
+    
+    setJobs(prev => [newJob, ...prev]);
+    setIsModalOpen(false);
+    
+    // Show success message
+    alert('✅ تم إنشاء الوظيفة بنجاح!');
+  };
+
   return (
-    <div className="job-listings">
-      {/* Header */}
-      <div className="jobs-header">
-        <div>
-          <h2>الوظائف المنشورة</h2>
-          <p>{filteredJobs.length} وظيفة</p>
-        </div>
-        <button className="btn-create-job">➕ وظيفة جديدة</button>
-      </div>
-
-      {/* Filters */}
-      <div className="jobs-filters">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="ابحث عن وظيفة..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-          <span className="search-icon">🔍</span>
+    <>
+      <div className="job-listings">
+        {/* Header */}
+        <div className="jobs-header">
+          <div>
+            <h2>الوظائف المنشورة</h2>
+            <p>{filteredJobs.length} وظيفة</p>
+          </div>
+          <button 
+            className="btn-create-job"
+            onClick={() => setIsModalOpen(true)}
+          >
+            ➕ وظيفة جديدة
+          </button>
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="filter-select"
-        >
-          <option value="all">جميع الحالات</option>
-          <option value="active">نشطة</option>
-          <option value="closed">مغلقة</option>
-        </select>
-      </div>
-
-      {/* Jobs Table */}
-      {isLoading ? (
-        <div className="loading">جاري التحميل...</div>
-      ) : filteredJobs.length === 0 ? (
-        <div className="empty-state">
-          <p>لا توجد وظائف</p>
-        </div>
-      ) : (
-        <>
-          <div className="jobs-table-wrapper">
-            <table className="jobs-table">
-              <thead>
-                <tr>
-                  <th>الوظيفة</th>
-                  <th>الموقع</th>
-                  <th>الراتب</th>
-                  <th>المتقدمون</th>
-                  <th>المشاهدات</th>
-                  <th>الحالة</th>
-                  <th>تاريخ النشر</th>
-                  <th>الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedJobs.map((job) => {
-                  const statusBadge = getStatusBadge(job.status);
-                  return (
-                    <tr key={job.id} className="job-row">
-                      <td className="job-title-cell">
-                        <div>
-                          <strong>{job.title}</strong>
-                          <small>{job.description}</small>
-                        </div>
-                      </td>
-                      <td>{job.location}</td>
-                      <td className="salary-cell">
-                        <strong>{job.salary}</strong>
-                        <small>{job.currency}</small>
-                      </td>
-                      <td>
-                        <span className="badge-applicants">👥 {job.applicants}</span>
-                      </td>
-                      <td>{job.views}</td>
-                      <td>
-                        <span
-                          className="status-badge"
-                          style={{ color: statusBadge.color, backgroundColor: statusBadge.bg }}
-                        >
-                          {statusBadge.label}
-                        </span>
-                      </td>
-                      <td className="date-cell">{job.postedDate}</td>
-                      <td className="actions-cell">
-                        <button className="btn-action" title="عرض">👁️</button>
-                        <button className="btn-action" title="تعديل">✏️</button>
-                        <button className="btn-action" title="حذف">🗑️</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* Filters */}
+        <div className="jobs-filters">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="ابحث عن وظيفة..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            <span className="search-icon">🔍</span>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                ◀ السابق
-              </button>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="all">جميع الحالات</option>
+            <option value="active">نشطة</option>
+            <option value="closed">مغلقة</option>
+          </select>
+        </div>
 
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={currentPage === i + 1 ? 'active' : ''}
-                >
-                  {i + 1}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                التالي ▶
-              </button>
+        {/* Jobs Table */}
+        {isLoading ? (
+          <div className="loading">جاري التحميل...</div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="empty-state">
+            <p>لا توجد وظائف</p>
+          </div>
+        ) : (
+          <>
+            <div className="jobs-table-wrapper">
+              <table className="jobs-table">
+                <thead>
+                  <tr>
+                    <th>الوظيفة</th>
+                    <th>الموقع</th>
+                    <th>الراتب</th>
+                    <th>المتقدمون</th>
+                    <th>المشاهدات</th>
+                    <th>الحالة</th>
+                    <th>تاريخ النشر</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedJobs.map((job) => {
+                    const statusBadge = getStatusBadge(job.status);
+                    return (
+                      <tr key={job.id} className="job-row">
+                        <td className="job-title-cell">
+                          <div>
+                            <strong>{job.title}</strong>
+                            <small>{job.description}</small>
+                          </div>
+                        </td>
+                        <td>{job.location}</td>
+                        <td className="salary-cell">
+                          <strong>{job.salary}</strong>
+                          <small>{job.currency}</small>
+                        </td>
+                        <td>
+                          <span className="badge-applicants">👥 {job.applicants}</span>
+                        </td>
+                        <td>{job.views}</td>
+                        <td>
+                          <span
+                            className="status-badge"
+                            style={{ color: statusBadge.color, backgroundColor: statusBadge.bg }}
+                          >
+                            {statusBadge.label}
+                          </span>
+                        </td>
+                        <td className="date-cell">{job.postedDate}</td>
+                        <td className="actions-cell">
+                          <button className="btn-action" title="عرض">👁️</button>
+                          <button className="btn-action" title="تعديل">✏️</button>
+                          <button className="btn-action" title="حذف">🗑️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </>
-      )}
-    </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ◀ السابق
+                </button>
+
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={currentPage === i + 1 ? 'active' : ''}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  التالي ▶
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Job Modal */}
+      <JobModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleJobSubmit}
+      />
+    </>
   );
 };
