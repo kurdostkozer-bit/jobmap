@@ -143,6 +143,11 @@ export class JobsService {
   /**
    * Search jobs within geographic bounds (Map Core Engine)
    * 
+   * OPTIMIZED: 
+   * - Removed company join (not needed for map display)
+   * - Selected only required fields
+   * - Default limit 50 instead of 100 (reduces payload size)
+   * 
    * @param boundsQuery - Contains bounds, zoom, center, filters
    * @returns Jobs within bounds + metadata
    */
@@ -163,7 +168,7 @@ export class JobsService {
     const {
       bounds,
       filters = {},
-      limit = 100,
+      limit = 50, // Reduced from 100 for faster payload
       offset = 0,
     } = boundsQuery;
 
@@ -174,12 +179,24 @@ export class JobsService {
       throw new BadRequestException('Invalid bounds');
     }
 
-    // Build query
+    // Build optimized query (no joins, selected fields only)
     let query = this.jobsRepository.createQueryBuilder('job')
+      .select([
+        'job.id',
+        'job.anonymizedLatitude',
+        'job.anonymizedLongitude',
+        'job.title',
+        'job.category',
+        'job.jobType',
+        'job.salaryMin',
+        'job.salaryMax',
+        'job.applicantsCount',
+        'job.createdAt',
+        'job.description',
+      ])
       .where('job.isActive = true')
       .andWhere('job.anonymizedLatitude BETWEEN :south AND :north', { south, north })
       .andWhere('job.anonymizedLongitude BETWEEN :west AND :east', { west, east })
-      .leftJoinAndSelect('job.company', 'company')
       .orderBy('job.createdAt', 'DESC')
       .skip(offset)
       .take(limit);
@@ -205,7 +222,7 @@ export class JobsService {
       query = query.andWhere('job.salaryMin <= :salaryMax', { salaryMax: filters.salaryMax });
     }
 
-    // Get total count for pagination
+    // Get total count for pagination (lightweight query)
     const totalQuery = this.jobsRepository.createQueryBuilder('job')
       .where('job.isActive = true')
       .andWhere('job.anonymizedLatitude BETWEEN :south AND :north', { south, north })
@@ -231,27 +248,27 @@ export class JobsService {
       totalQuery.andWhere('job.salaryMin <= :salaryMax', { salaryMax: filters.salaryMax });
     }
 
-    const total = await totalQuery.getCount();
-    const jobs = await query.getMany();
+    // Execute both queries in parallel for better performance
+    const [jobs, total] = await Promise.all([
+      query.getRawMany(),
+      totalQuery.getCount(),
+    ]);
 
     // Transform jobs to match frontend API spec
     const transformedJobs = jobs.map(job => ({
-      id: job.id,
-      latitude: parseFloat(job.anonymizedLatitude.toString()),
-      longitude: parseFloat(job.anonymizedLongitude.toString()),
-      company: job.company?.name || 'Unknown',
-      title: job.title,
-      salary: `${job.salaryMin || 'N/A'}-${job.salaryMax || 'N/A'}`,
-      salaryMin: job.salaryMin ? parseFloat(job.salaryMin.toString()) : null,
-      salaryMax: job.salaryMax ? parseFloat(job.salaryMax.toString()) : null,
-      employmentType: job.jobType || 'full-time',
-      category: job.category || 'Other',
-      status: job.isActive ? 'active' : 'inactive',
-      createdAt: job.createdAt.toISOString(),
-      updatedAt: job.updatedAt.toISOString(),
-      description: job.description,
-      skills: job.skills || [],
-      applicants: job.applicantsCount || 0,
+      id: job.job_id,
+      latitude: parseFloat(job.job_anonymizedLatitude),
+      longitude: parseFloat(job.job_anonymizedLongitude),
+      title: job.job_title,
+      salary: `${job.job_salaryMin || 'N/A'}-${job.job_salaryMax || 'N/A'}`,
+      salaryMin: job.job_salaryMin ? parseFloat(job.job_salaryMin) : null,
+      salaryMax: job.job_salaryMax ? parseFloat(job.job_salaryMax) : null,
+      employmentType: job.job_jobType || 'full-time',
+      category: job.job_category || 'Other',
+      status: 'active',
+      createdAt: job.job_createdAt?.toISOString?.() || new Date().toISOString(),
+      description: job.job_description,
+      applicants: job.job_applicantsCount || 0,
     }));
 
     return {

@@ -1,0 +1,11 @@
+{
+  "bounds": {
+    "north": 34.5,
+    "south": 32.0,
+    "east": 45.0,
+    "west": 43.0
+  },
+  "zoom": 7,
+  "filters": {},
+  "limit": 50
+}
