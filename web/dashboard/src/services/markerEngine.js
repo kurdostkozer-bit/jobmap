@@ -23,8 +23,7 @@ export const createJobMarkerIcon = (salaryMin, isSelected = false) => {
   const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 50"><path d="M20 2 C10 2, 3 9, 3 18 C3 30, 20 48, 20 48 C20 48, 37 30, 37 18 C37 9, 30 2, 20 2" fill="%2322c55e" stroke="white" stroke-width="1.5"/><polyline points="14,20 18,24 28,14" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   
   const iconSize = isSelected ? [40, 50] : [32, 40];
-  const iconScale = isSelected ? 1.25 : 1;
-
+  void salaryMin;
   return L.icon({
     iconUrl: `data:image/svg+xml;base64,${btoa(svgString)}`,
     iconSize: iconSize,

@@ -2,7 +2,6 @@ import io from 'socket.io-client';
 import {
   WebSocketEvents,
   WebSocketConfig,
-  NotificationEventTypes,
 } from '../../shared/events/index';
 
 class SocketService {
@@ -194,4 +193,6 @@ class SocketService {
   }
 }
 
-export default new SocketService();
+const socketService = new SocketService();
+export { socketService };
+export default socketService;

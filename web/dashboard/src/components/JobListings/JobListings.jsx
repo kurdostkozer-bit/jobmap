@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './JobListings.css';
 import { JobModal } from '../JobModal/JobModal';
+import jobService from '../../core/services/jobService';
 
 export const JobListings = () => {
   const [jobs, setJobs] = useState([]);
@@ -12,76 +13,37 @@ export const JobListings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Mock jobs data
   useEffect(() => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const mockJobs = [
-        {
-          id: 1,
-          title: 'Senior Developer',
-          location: 'بغداد',
-          salary: '5000-7000',
-          currency: 'USD',
-          applicants: 12,
-          status: 'active',
-          postedDate: '2026-07-20',
-          views: 234,
-          description: 'نبحث عن مطور خبير',
-        },
-        {
-          id: 2,
-          title: 'UI/UX Designer',
-          location: 'بغداد',
-          salary: '3500-4500',
-          currency: 'USD',
-          applicants: 8,
-          status: 'active',
-          postedDate: '2026-07-18',
-          views: 156,
-          description: 'مصمم واجهات ذو خبرة',
-        },
-        {
-          id: 3,
-          title: 'Project Manager',
-          location: 'الموصل',
-          salary: '4000-5500',
-          currency: 'USD',
-          applicants: 15,
-          status: 'active',
-          postedDate: '2026-07-15',
-          views: 342,
-          description: 'مدير مشاريع قيادي',
-        },
-        {
-          id: 4,
-          title: 'Marketing Specialist',
-          location: 'بغداد',
-          salary: '2500-3500',
-          currency: 'USD',
-          applicants: 5,
-          status: 'closed',
-          postedDate: '2026-07-10',
-          views: 189,
-          description: 'متخصص تسويق رقمي',
-        },
-        {
-          id: 5,
-          title: 'Data Analyst',
-          location: 'كربلاء',
-          salary: '3000-4000',
-          currency: 'USD',
-          applicants: 10,
-          status: 'active',
-          postedDate: '2026-07-22',
-          views: 267,
-          description: 'محلل بيانات',
-        },
-      ];
-      setJobs(mockJobs);
-      setFilteredJobs(mockJobs);
-      setIsLoading(false);
-    }, 500);
+    const loadJobs = async () => {
+      setIsLoading(true);
+      try {
+        const response = await jobService.getJobs();
+        const data = Array.isArray(response) ? response : response?.items || [];
+        const normalizedJobs = data.map((job) => ({
+          id: job.id,
+          title: job.title,
+          location: job.location || job.governorate || 'غير محدد',
+          salary: job.salary ? `${job.salary}` : 'غير محدد',
+          currency: job.currency || 'USD',
+          applicants: job.applicantsCount || 0,
+          status: job.isActive ? 'active' : 'closed',
+          postedDate: job.createdAt ? new Date(job.createdAt).toISOString().split('T')[0] : '-',
+          views: job.views || 0,
+          description: job.description || 'لا يوجد وصف',
+        }));
+
+        setJobs(normalizedJobs);
+        setFilteredJobs(normalizedJobs);
+      } catch (error) {
+        console.error('Failed to load jobs:', error);
+        setJobs([]);
+        setFilteredJobs([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadJobs();
   }, []);
 
   // Filter and search logic
@@ -117,24 +79,39 @@ export const JobListings = () => {
       : { label: 'مغلق', color: '#f56565', bg: '#fff5f5' };
   };
 
-  const handleJobSubmit = (formData) => {
-    // Add new job to the list
-    const newJob = {
-      id: jobs.length + 1,
-      ...formData,
-      salary: `${formData.salaryMin}-${formData.salaryMax}`,
-      currency: 'USD',
-      applicants: 0,
-      status: 'active',
-      postedDate: new Date().toISOString().split('T')[0],
-      views: 0,
-    };
-    
-    setJobs(prev => [newJob, ...prev]);
-    setIsModalOpen(false);
-    
-    // Show success message
-    alert('✅ تم إنشاء الوظيفة بنجاح!');
+  const handleJobSubmit = async (formData) => {
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        salaryMin: formData.salaryMin,
+        salaryMax: formData.salaryMax,
+        currency: 'USD',
+      };
+
+      const createdJob = await jobService.createJob(payload);
+      const normalizedJob = {
+        id: createdJob.id,
+        title: createdJob.title,
+        location: createdJob.location || 'غير محدد',
+        salary: createdJob.salary ? `${createdJob.salary}` : 'غير محدد',
+        currency: createdJob.currency || 'USD',
+        applicants: createdJob.applicantsCount || 0,
+        status: createdJob.isActive ? 'active' : 'closed',
+        postedDate: createdJob.createdAt ? new Date(createdJob.createdAt).toISOString().split('T')[0] : '-',
+        views: createdJob.views || 0,
+        description: createdJob.description || 'لا يوجد وصف',
+      };
+
+      setJobs(prev => [normalizedJob, ...prev]);
+      setFilteredJobs(prev => [normalizedJob, ...prev]);
+      setIsModalOpen(false);
+      alert('✅ تم إنشاء الوظيفة بنجاح!');
+    } catch (error) {
+      console.error('Failed to create job:', error);
+      alert('❌ فشل إنشاء الوظيفة');
+    }
   };
 
   return (

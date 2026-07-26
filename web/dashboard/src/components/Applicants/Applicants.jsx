@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './Applicants.css';
-import { ApplicantModal } from '../ApplicantModal/ApplicantModal';
 
 export const Applicants = () => {
   const [applicants, setApplicants] = useState([]);
@@ -10,8 +9,6 @@ export const Applicants = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedApplicant, setSelectedApplicant] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Mock applicants data
   useEffect(() => {
@@ -268,10 +265,7 @@ export const Applicants = () => {
                         <button className="btn-action btn-view">
                           👁️ عرض الملف
                         </button>
-                        <button
-                          className="btn-action btn-message"
-                          onClick={() => setSelectedApplicant(applicant)}
-                        >
+                        <button className="btn-action btn-message">
                           💬 رسالة
                         </button>
                       </>

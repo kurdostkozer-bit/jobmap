@@ -135,14 +135,14 @@ export const ApplicantModal = ({ isOpen, applicant, onClose, onStatusChange }) =
           <section className="info-section">
             <h3>📎 المرفقات</h3>
             <div className="attachments">
-              <a href="#" className="attachment-item">
+              <button type="button" className="attachment-item" onClick={(e) => e.preventDefault()}>
                 <span>📄</span>
                 <span>Resume.pdf</span>
-              </a>
-              <a href="#" className="attachment-item">
+              </button>
+              <button type="button" className="attachment-item" onClick={(e) => e.preventDefault()}>
                 <span>📄</span>
                 <span>CoverLetter.docx</span>
-              </a>
+              </button>
             </div>
           </section>
 

@@ -46,6 +46,18 @@ class JobService {
   }
 
   /**
+   * Create a new job
+   */
+  async createJob(jobData) {
+    try {
+      return await apiClient.post('/jobs', jobData);
+    } catch (error) {
+      console.error('Error creating job:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Apply for a job
    */
   async applyForJob(jobId, applicationData) {

@@ -4,10 +4,11 @@ import { NotificationEventTypes } from '../../shared/events/index';
 import './NotificationCenter.css';
 
 export const NotificationCenter = () => {
-  const { subscribe, isConnected } = useSocket(); // No userId parameter - gets from token
+  const { subscribe } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  void setShowNotifications;
 
   useEffect(() => {
     // Subscribe to notifications

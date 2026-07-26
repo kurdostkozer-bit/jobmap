@@ -78,9 +78,15 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+
+    if (!jwtRefreshSecret) {
+      throw new Error('JWT_REFRESH_SECRET is required');
+    }
+
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+        secret: jwtRefreshSecret,
       });
 
       const user = await this.usersRepository.findOne({
@@ -98,26 +104,39 @@ export class AuthService {
   }
 
   private generateTokens(user: User): AuthResponseDto {
+    const jwtSecret = process.env.JWT_SECRET;
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is required');
+    }
+
+    if (!jwtRefreshSecret) {
+      throw new Error('JWT_REFRESH_SECRET is required');
+    }
+
     const accessToken = this.jwtService.sign(
       {
+        sub: user.id,
         userId: user.id,
         email: user.email,
         role: user.role,
       },
       {
         expiresIn: '7d',
-        secret: process.env.JWT_SECRET || 'secret',
+        secret: jwtSecret,
       }
     );
 
     const refreshToken = this.jwtService.sign(
       {
+        sub: user.id,
         userId: user.id,
         email: user.email,
       },
       {
         expiresIn: '30d',
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+        secret: jwtRefreshSecret,
       }
     );
 

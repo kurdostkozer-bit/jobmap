@@ -48,7 +48,7 @@ import { SavedSearch } from './modules/saved-searches/entities/saved-search.enti
       migrations: [
         'dist/database/migrations/**/*.js',
       ],
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.DB_LOGGING === 'true',
     }),
     AuthModule,

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { OnboardingPage } from './OnboardingPage';
 import MarkerManager, { 
   createJobMarkerIcon, 
   createUserMarkerIcon
@@ -61,8 +60,11 @@ function MapEvents({ onMapMove, onZoom }) {
  */
 
 export const MapHomePage = () => {
+  const navigate = useNavigate();
+
   // ========== CORE STATE ==========
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [, setShowOnboarding] = useState(true);
+  void setShowOnboarding;
   const [userLocation, setUserLocation] = useState({ lat: 33.3136, lng: 44.3615 });
   
   // ========== MAP STATE ==========
@@ -77,7 +79,6 @@ export const MapHomePage = () => {
   
   // ========== JOB DATA STATE ==========
   const [jobs, setJobs] = useState([]);
-  const [jobsStats, setJobsStats] = useState({ total: 0, filtered: 0 });
   const [selectedJob, setSelectedJob] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -85,6 +86,8 @@ export const MapHomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  void searchTerm;
+  void retryCount;
   
   // ========== CACHE ==========
   const cacheRef = useRef(new Map());
@@ -95,6 +98,7 @@ export const MapHomePage = () => {
   // ========== CLUSTERING ENGINE ==========
   const clusteringEngineRef = useRef(null);
   const [clusteredResults, setClusteredResults] = useState({ clusters: [], unclustered: [], stats: {} });
+  void setClusteredResults;
   
   // Prevent duplicate auto-search in React Strict Mode or repeated initial renders
   const autoSearchTriggeredRef = useRef(false);
@@ -154,7 +158,6 @@ export const MapHomePage = () => {
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION_MS) {
       console.log('Using cached results');
       setJobs(cached.jobs);
-      setJobsStats(cached.stats);
       setPreviousBounds(mapBounds);
       setBoundsDirty(false);
       return;
@@ -193,10 +196,6 @@ export const MapHomePage = () => {
 
       const returnedJobs = data.jobs || [];
       setJobs(returnedJobs);
-      setJobsStats({
-        total: data.stats?.totalFound || 0,
-        filtered: data.stats?.returnedCount || returnedJobs.length,
-      });
       setPreviousBounds(mapBounds);
       setBoundsDirty(false);
       setError(null);
