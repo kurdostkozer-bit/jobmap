@@ -15,6 +15,9 @@ services:
     name: jobmap-frontend
     staticPublishPath: web/dashboard/build
     buildCommand: cd web/dashboard && npm install && npm run build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://jobmap-backend-57v5.onrender.com/api
     routes:
       - path: /*
         destination: /index.html
