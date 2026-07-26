@@ -27,24 +27,13 @@ export class JobsController {
     @Request() req: any,
     @Body() createJobDTO: CreateJobDTO,
   ): Promise<Job> {
-    // Get company ID from user (assumes user has companyId)
-    // In production, verify user owns the company
     return await this.jobsService.create(req.user.companyId, createJobDTO);
   }
 
-  @Get(':id')
-  async findById(@Param('id') id: string): Promise<Job> {
-    return await this.jobsService.findById(id);
-  }
-
-  @Get('company/:companyId')
-  async findByCompany(@Param('companyId') companyId: string): Promise<Job[]> {
-    return await this.jobsService.findByCompanyId(companyId);
-  }
-
-  @Get('governorate/:governorate')
-  async findByGovernorate(@Param('governorate') governorate: string): Promise<Job[]> {
-    return await this.jobsService.findByGovernorate(governorate);
+  // Static routes BEFORE :id parameter
+  @Post('search/bounds')
+  async searchByBounds(@Body() boundsQuery: SearchBoundsDto): Promise<any> {
+    return await this.jobsService.searchByBounds(boundsQuery);
   }
 
   @Get('search')
@@ -66,9 +55,20 @@ export class JobsController {
     return await this.jobsService.findByLocation(lat, lng, radius);
   }
 
-  @Post('search/bounds')
-  async searchByBounds(@Body() boundsQuery: SearchBoundsDto): Promise<any> {
-    return await this.jobsService.searchByBounds(boundsQuery);
+  @Get('company/:companyId')
+  async findByCompany(@Param('companyId') companyId: string): Promise<Job[]> {
+    return await this.jobsService.findByCompanyId(companyId);
+  }
+
+  @Get('governorate/:governorate')
+  async findByGovernorate(@Param('governorate') governorate: string): Promise<Job[]> {
+    return await this.jobsService.findByGovernorate(governorate);
+  }
+
+  // Dynamic :id route LAST
+  @Get(':id')
+  async findById(@Param('id') id: string): Promise<Job> {
+    return await this.jobsService.findById(id);
   }
 
   @Put(':id')
