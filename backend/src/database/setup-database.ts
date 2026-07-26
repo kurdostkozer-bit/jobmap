@@ -35,10 +35,52 @@ async function setupDatabase() {
 
     await queryRunner.release();
 
-    // Step 2: Seed jobs data
+    // Step 2: Create demo companies
+    console.log('🏢 Creating demo companies...');
+    const companyRepository = setupDataSource.getRepository(Company);
+    
+    const demoCompanies = [
+      { name: 'TechCorp Iraq', description: 'Leading tech company in Iraq' },
+      { name: 'Digital Solutions Ltd', description: 'Premium digital services' },
+      { name: 'Design Studio Pro', description: 'Creative design agency' },
+      { name: 'Database Services', description: 'Database and infrastructure' },
+      { name: 'Cloud Innovations', description: 'Cloud computing solutions' },
+      { name: 'QA Excellence', description: 'Quality assurance services' },
+      { name: 'Enterprise Architects', description: 'Enterprise solutions' },
+      { name: 'Creative Arts', description: 'Graphics and design' },
+      { name: 'Business Growth', description: 'Sales and business development' },
+    ];
+
+    const companies = [];
+    for (const companyData of demoCompanies) {
+      let company = await companyRepository.findOne({ where: { name: companyData.name } });
+      if (!company) {
+        company = companyRepository.create(companyData);
+        company = await companyRepository.save(company);
+        console.log(`✓ Created company: ${companyData.name}`);
+      } else {
+        console.log(`⊙ Company exists: ${companyData.name}`);
+      }
+      companies.push(company);
+    }
+
+    // Step 3: Seed jobs data with real company IDs
     console.log('🌱 Seeding P3 discovery jobs...');
     
     const jobsRepository = setupDataSource.getRepository(Job);
+    
+    // Map companyIds from testJobs to real company UUIDs
+    const companyIdMap: Record<string, string> = {
+      'company-1': companies[0].id,
+      'company-2': companies[1].id,
+      'company-3': companies[2].id,
+      'company-4': companies[3].id,
+      'company-5': companies[4].id,
+      'company-6': companies[5].id,
+      'company-7': companies[6].id,
+      'company-8': companies[7].id,
+      'company-9': companies[8].id,
+    };
     
     const testJobs = [
       {
@@ -273,7 +315,14 @@ async function setupDatabase() {
       });
 
       if (!existingJob) {
-        const job = jobsRepository.create(jobData);
+        // Replace the placeholder companyId with real UUID
+        const realCompanyId = companyIdMap[jobData.companyId as keyof typeof companyIdMap];
+        const jobPayload = {
+          ...jobData,
+          companyId: realCompanyId,
+        };
+        
+        const job = jobsRepository.create(jobPayload);
         await jobsRepository.save(job);
         createdCount++;
         console.log(`✓ Created: ${jobData.title}`);
