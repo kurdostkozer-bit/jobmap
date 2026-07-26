@@ -10,6 +10,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SavedSearchesModule } from './modules/saved-searches/saved-searches.module';
 
 // Import entities directly
 import { User } from './modules/users/entities/user.entity';
@@ -18,6 +19,7 @@ import { Job } from './modules/jobs/entities/job.entity';
 import { Notification } from './modules/notifications/entities/notification.entity';
 import { Application } from './modules/applications/entities/application.entity';
 import { Governorate, District, Neighborhood } from './modules/locations/entities/location.entity';
+import { SavedSearch } from './modules/saved-searches/entities/saved-search.entity';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { Governorate, District, Neighborhood } from './modules/locations/entitie
         Governorate,
         District,
         Neighborhood,
+        SavedSearch,
       ],
       migrations: [
         'dist/database/migrations/**/*.js',
@@ -55,6 +58,7 @@ import { Governorate, District, Neighborhood } from './modules/locations/entitie
     LocationsModule,
     ApplicationsModule,
     NotificationsModule,
+    SavedSearchesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

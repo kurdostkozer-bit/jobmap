@@ -5,6 +5,7 @@ import applicationsReducer from '../features/applications/slices/applicationsSli
 import notificationsReducer from '../features/notifications/slices/notificationsSlice';
 import mapReducer from '../features/map/slices/mapSlice';
 import companiesReducer from '../features/companies/slices/companiesSlice';
+import savedSearchesReducer from '../features/jobs/slices/savedSearchesSlice';
 
 const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ const store = configureStore({
     notifications: notificationsReducer,
     map: mapReducer,
     companies: companiesReducer,
+    savedSearches: savedSearchesReducer,
   },
 });
 

@@ -147,8 +147,9 @@ export class JobsService {
    * - Removed company join (not needed for map display)
    * - Selected only required fields
    * - Default limit 50 instead of 100 (reduces payload size)
+   * - Supports multi-field sorting (relevance, salary, date, distance)
    * 
-   * @param boundsQuery - Contains bounds, zoom, center, filters
+   * @param boundsQuery - Contains bounds, zoom, center, filters, sortBy
    * @returns Jobs within bounds + metadata
    */
   async searchByBounds(boundsQuery: {
@@ -161,14 +162,17 @@ export class JobsService {
       salaryMin?: number;
       salaryMax?: number;
       status?: string[];
+      experienceLevel?: string[];
     };
+    sortBy?: string;
     limit?: number;
     offset?: number;
   }): Promise<any> {
     const {
       bounds,
       filters = {},
-      limit = 50, // Reduced from 100 for faster payload
+      sortBy = 'relevance',
+      limit = 50,
       offset = 0,
     } = boundsQuery;
 
@@ -193,13 +197,11 @@ export class JobsService {
         'job.applicantsCount',
         'job.createdAt',
         'job.description',
+        'job.experienceLevel',
       ])
       .where('job.isActive = true')
       .andWhere('job.anonymizedLatitude BETWEEN :south AND :north', { south, north })
-      .andWhere('job.anonymizedLongitude BETWEEN :west AND :east', { west, east })
-      .orderBy('job.createdAt', 'DESC')
-      .skip(offset)
-      .take(limit);
+      .andWhere('job.anonymizedLongitude BETWEEN :west AND :east', { west, east });
 
     // Apply filters if provided
     if (filters.employmentType && filters.employmentType.length > 0) {
@@ -214,6 +216,12 @@ export class JobsService {
       });
     }
 
+    if (filters.experienceLevel && filters.experienceLevel.length > 0) {
+      query = query.andWhere('job.experienceLevel IN (:...levels)', {
+        levels: filters.experienceLevel,
+      });
+    }
+
     if (filters.salaryMin) {
       query = query.andWhere('job.salaryMax >= :salaryMin', { salaryMin: filters.salaryMin });
     }
@@ -222,8 +230,32 @@ export class JobsService {
       query = query.andWhere('job.salaryMin <= :salaryMax', { salaryMax: filters.salaryMax });
     }
 
+    // Apply sorting
+    switch (sortBy) {
+      case 'salary-asc':
+        query = query.orderBy('job.salaryMin', 'ASC').addOrderBy('job.createdAt', 'DESC');
+        break;
+      case 'salary-desc':
+        query = query.orderBy('job.salaryMax', 'DESC').addOrderBy('job.createdAt', 'DESC');
+        break;
+      case 'date':
+        query = query.orderBy('job.createdAt', 'DESC');
+        break;
+      case 'distance':
+        // Distance sorting requires center point (already in bounds query)
+        // For now, default to relevance (createdAt DESC + applicants DESC)
+        query = query.orderBy('job.createdAt', 'DESC').addOrderBy('job.applicantsCount', 'DESC');
+        break;
+      case 'relevance':
+      default:
+        // Relevance: combination of recency and popularity
+        query = query.orderBy('job.createdAt', 'DESC').addOrderBy('job.applicantsCount', 'DESC');
+    }
+
+    query = query.skip(offset).take(limit);
+
     // Get total count for pagination (lightweight query)
-    const totalQuery = this.jobsRepository.createQueryBuilder('job')
+    let totalQuery = this.jobsRepository.createQueryBuilder('job')
       .where('job.isActive = true')
       .andWhere('job.anonymizedLatitude BETWEEN :south AND :north', { south, north })
       .andWhere('job.anonymizedLongitude BETWEEN :west AND :east', { west, east });
@@ -237,6 +269,12 @@ export class JobsService {
     if (filters.category && filters.category.length > 0) {
       totalQuery.andWhere('job.category IN (:...categories)', {
         categories: filters.category,
+      });
+    }
+
+    if (filters.experienceLevel && filters.experienceLevel.length > 0) {
+      totalQuery.andWhere('job.experienceLevel IN (:...levels)', {
+        levels: filters.experienceLevel,
       });
     }
 
@@ -263,8 +301,9 @@ export class JobsService {
       salary: `${job.job_salaryMin || 'N/A'}-${job.job_salaryMax || 'N/A'}`,
       salaryMin: job.job_salaryMin ? parseFloat(job.job_salaryMin) : null,
       salaryMax: job.job_salaryMax ? parseFloat(job.job_salaryMax) : null,
-      employmentType: job.job_jobType || 'full-time',
+      employmentType: job.job_jobType || 'Full-Time',
       category: job.job_category || 'Other',
+      experienceLevel: job.job_experienceLevel || 'Entry',
       status: 'active',
       createdAt: job.job_createdAt?.toISOString?.() || new Date().toISOString(),
       description: job.job_description,
@@ -276,6 +315,7 @@ export class JobsService {
       meta: {
         timestamp: new Date().toISOString(),
         searchArea: { north, south, east, west },
+        sortBy,
       },
       stats: {
         totalFound: total,

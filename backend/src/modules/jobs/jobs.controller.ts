@@ -14,6 +14,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { JobsService } from './jobs.service';
 import { CreateJobDTO } from './dto/create-job.dto';
+import { SearchBoundsDto } from './dto/search-bounds.dto';
 import { Job } from './entities/job.entity';
 
 @Controller('jobs')
@@ -66,7 +67,7 @@ export class JobsController {
   }
 
   @Post('search/bounds')
-  async searchByBounds(@Body() boundsQuery: any): Promise<any> {
+  async searchByBounds(@Body() boundsQuery: SearchBoundsDto): Promise<any> {
     return await this.jobsService.searchByBounds(boundsQuery);
   }
 

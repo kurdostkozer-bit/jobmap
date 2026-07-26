@@ -34,6 +34,27 @@ export const getNearbyJobs = createAsyncThunk(
   }
 );
 
+export const searchJobsByBounds = createAsyncThunk(
+  'jobs/searchByBounds',
+  async (boundsQuery, { rejectWithValue, getState }) => {
+    try {
+      const state = getState();
+      const sortBy = state.jobs.sortBy;
+      
+      // إضافة sortBy إلى الـ query
+      const queryWithSort = {
+        ...boundsQuery,
+        sortBy,
+      };
+      
+      const response = await jobsAPI.searchByBounds(queryWithSort);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
 export const createJob = createAsyncThunk(
   'jobs/create',
   async (jobData, { rejectWithValue }) => {
@@ -78,7 +99,12 @@ const initialState = {
     governorate: null,
     salaryMin: null,
     salaryMax: null,
+    category: [],
+    employmentType: [],
+    experienceLevel: [],
   },
+  sortBy: 'relevance', // relevance, salary-asc, salary-desc, date, distance
+  totalResults: 0,
 };
 
 const jobsSlice = createSlice({
@@ -90,6 +116,9 @@ const jobsSlice = createSlice({
     },
     clearFilters: (state) => {
       state.filters = initialState.filters;
+    },
+    setSortBy: (state, action) => {
+      state.sortBy = action.payload;
     },
     clearError: (state) => {
       state.error = null;
@@ -130,9 +159,22 @@ const jobsSlice = createSlice({
       })
       .addCase(deleteJob.fulfilled, (state, action) => {
         state.jobs = state.jobs.filter((job) => job.id !== action.payload);
+      })
+      .addCase(searchJobsByBounds.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(searchJobsByBounds.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.jobs = action.payload.jobs || [];
+        state.totalResults = action.payload.stats?.totalFound || 0;
+      })
+      .addCase(searchJobsByBounds.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { setFilters, clearFilters, clearError } = jobsSlice.actions;
+export const { setFilters, clearFilters, setSortBy, clearError } = jobsSlice.actions;
 export default jobsSlice.reducer;

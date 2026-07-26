@@ -12,6 +12,9 @@ export const jobsAPI = {
     return apiClient.get(path);
   },
 
+  searchByBounds: (boundsQuery) =>
+    apiClient.post('/jobs/search/bounds', boundsQuery),
+
   getNearby: (lat, lng, radius = 50) =>
     apiClient.get(`/jobs/location/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
 
