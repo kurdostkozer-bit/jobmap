@@ -1,18 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './MapHomePage.css';
 
 export const MapHomePage = () => {
   const mapRef = useRef(null);
-  const [map, setMap] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const markersRef = useRef([]);
 
   // Mock jobs data with Iraq coordinates
-  const allJobs = [
+  const allJobs = useMemo(() => [
     {
       id: 1,
       title: 'Senior Developer',
@@ -97,7 +95,7 @@ export const MapHomePage = () => {
       skills: ['Docker', 'Kubernetes', 'AWS'],
       applicants: 7,
     },
-  ];
+  ], []);
 
   // Initialize Google Map
   useEffect(() => {
@@ -105,14 +103,14 @@ export const MapHomePage = () => {
     
     // Simulate loading and then initialize map
     setTimeout(() => {
-      if (mapRef.current && !map) {
+      if (mapRef.current) {
         // Create a simple map without Google Maps (fallback to Leaflet visual style)
         initializeSimpleMap();
       }
       setFilteredJobs(allJobs);
       setIsLoading(false);
     }, 500);
-  }, []);
+  }, [allJobs]);
 
   const initializeSimpleMap = () => {
     // Create map placeholder - in production use Google Maps API
