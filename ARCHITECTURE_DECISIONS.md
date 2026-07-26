@@ -1,6 +1,10 @@
 # Architecture Decisions - JobMap
 
-## ADR-001: Map-First Architecture
+**Version:** 1.0  
+**Last Updated:** 2026-07-26  
+**Owner:** JobMap
+
+---
 
 **Status:** Accepted  
 **Date:** 2024-01-15  

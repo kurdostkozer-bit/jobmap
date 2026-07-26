@@ -1,9 +1,8 @@
 # JobMap — Comprehensive Roadmap
 
-**Version:** 3.0 (Simplified)  
-**Date:** 2026-07-26  
-**Status:** Milestone-based  
-**For:** Solo Developer
+**Version:** 1.0  
+**Last Updated:** 2026-07-26  
+**Owner:** JobMap
 
 ---
 

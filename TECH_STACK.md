@@ -1,4 +1,10 @@
-# JobMap Iraq - Correct Tech Stack ✅
+# Tech Stack
+
+**Version:** 1.0  
+**Last Updated:** 2026-07-26  
+**Owner:** JobMap
+
+---
 
 ## Mobile App - FLUTTER ✅
 

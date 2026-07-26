@@ -1,8 +1,21 @@
 # 🏢 JobMap - Location-Based Recruitment Platform
 
-**Version:** 0.1.0-alpha  
-**Status:** 🟡 Sprint 1 - Authentication Complete, Ready for QA  
-**Last Updated:** July 25, 2026
+**Version:** 1.0  
+**Status:** 🟡 P2-B Complete, P2.9 Validation Pending  
+**Last Updated:** July 26, 2026  
+**Owner:** Solo Developer
+
+---
+
+## 📚 Documentation
+
+**Start here:**
+1. [START_HERE.md](./START_HERE.md) — Getting started
+2. [JOBMAP_PRODUCT_VISION.md](./JOBMAP_PRODUCT_VISION.md) — Why we build this
+3. [COMPREHENSIVE_ROADMAP.md](./COMPREHENSIVE_ROADMAP.md) — Project roadmap (8 milestones)
+4. [ARCHITECTURE_DECISIONS.md](./ARCHITECTURE_DECISIONS.md) — Architecture & design decisions
+5. [TECH_STACK.md](./TECH_STACK.md) — Technologies used
+6. [ENGINEERING_STANDARDS.md](./ENGINEERING_STANDARDS.md) — Coding standards & daily reference
 
 ---
 

@@ -1,5 +1,8 @@
 # JobMap - Product Vision
-## خارطة العمل: منصة اكتشاف فرص عمل مبنية على الخريطة
+
+**Version:** 1.0  
+**Last Updated:** 2026-07-26  
+**Owner:** JobMap
 
 ---
 
