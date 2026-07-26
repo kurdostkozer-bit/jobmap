@@ -1,4 +1,5 @@
-import { IsNumber, IsOptional, IsArray, IsString, Min, Max } from 'class-validator';
+import { IsNumber, IsOptional, IsArray, IsString, Min, Max, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class BoundsDto {
   @IsNumber()
@@ -46,6 +47,14 @@ export class FiltersDto {
   experienceLevel?: string[];
 }
 
+export class CenterDto {
+  @IsNumber()
+  lat: number;
+
+  @IsNumber()
+  lng: number;
+}
+
 export class SearchBoundsDto {
   @IsNumber()
   @Min(1)
@@ -53,15 +62,18 @@ export class SearchBoundsDto {
   @IsOptional()
   zoom?: number;
 
+  @ValidateNested()
+  @Type(() => BoundsDto)
   bounds: BoundsDto;
 
   @IsOptional()
-  center?: {
-    lat: number;
-    lng: number;
-  };
+  @ValidateNested()
+  @Type(() => CenterDto)
+  center?: CenterDto;
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => FiltersDto)
   filters?: FiltersDto;
 
   @IsOptional()
