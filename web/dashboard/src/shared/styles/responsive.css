@@ -1,0 +1,550 @@
+/**
+ * JobMap Responsive Design System
+ * 
+ * Breakpoints:
+ * - Mobile: 320px - 479px
+ * - Tablet: 480px - 1023px
+ * - Desktop: 1024px+
+ * 
+ * الفلسفة:
+ * Mobile-First: نبدأ بتصميم الموبايل ثم نضيف media queries للأجهزة الأكبر
+ */
+
+:root {
+  /* ========== SPACING ========== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* ========== TYPOGRAPHY ========== */
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 28px;
+  --font-size-5xl: 32px;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ========== COLORS ========== */
+  --color-primary: #667eea;
+  --color-primary-light: #e0e7ff;
+  --color-primary-dark: #5568d3;
+  
+  --color-success: #48bb78;
+  --color-success-light: #f0fdf4;
+  
+  --color-warning: #ed8936;
+  --color-warning-light: #fffbeb;
+  
+  --color-error: #f56565;
+  --color-error-light: #fef2f2;
+  
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  --color-text: #1f2937;
+  --color-text-light: #6b7280;
+  --color-bg: #ffffff;
+  --color-bg-alt: #f9fafb;
+  --color-border: #e5e7eb;
+
+  /* ========== SHADOWS ========== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  /* ========== BORDER RADIUS ========== */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  /* ========== TRANSITIONS ========== */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  /* ========== Z-INDEX ========== */
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  --z-notification: 1200;
+
+  /* ========== BREAKPOINTS (for JS access) ========== */
+  --breakpoint-mobile: 320px;
+  --breakpoint-tablet: 480px;
+  --breakpoint-desktop: 1024px;
+}
+
+/* ========== MEDIA QUERY MIXINS (using CSS comments) ========== */
+
+/**
+ * Mobile First Approach:
+ * 
+ * Base styles = Mobile (default)
+ * @media (min-width: 480px) = Tablet
+ * @media (min-width: 1024px) = Desktop
+ * @media (min-width: 1440px) = Large Desktop
+ */
+
+/* ========== RESPONSIVE TYPOGRAPHY ========== */
+
+/* Headings - Scale down on mobile */
+h1, .h1 {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+  font-weight: 700;
+}
+
+h2, .h2 {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+  font-weight: 700;
+}
+
+h3, .h3 {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-normal);
+  font-weight: 600;
+}
+
+h4, .h4 {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-normal);
+  font-weight: 600;
+}
+
+p, .p {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+}
+
+small, .small {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* ========== RESPONSIVE IMAGES ========== */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ========== RESPONSIVE CONTAINERS ========== */
+
+.container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .container {
+    max-width: 464px;
+    padding: 0 var(--spacing-lg);
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 736px;
+    padding: 0 var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 960px;
+    padding: 0 var(--spacing-xl);
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1280px;
+    padding: 0 var(--spacing-2xl);
+  }
+}
+
+/* ========== RESPONSIVE GRID ========== */
+
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+/* 1 column on mobile */
+.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+/* 2 columns on tablet and up */
+.grid-2 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 480px) {
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 3 columns on desktop and up */
+.grid-3 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 4 columns on large desktop */
+.grid-4 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1440px) {
+  .grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ========== RESPONSIVE FLEX ========== */
+
+.flex-col-mobile {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .flex-col-mobile {
+    flex-direction: row;
+  }
+}
+
+.flex-wrap-mobile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+/* ========== RESPONSIVE DISPLAY ========== */
+
+/* Hide on mobile, show on tablet+ */
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .hide-mobile {
+    display: block;
+  }
+}
+
+/* Hide on tablet+, show on mobile */
+.show-mobile {
+  display: block;
+}
+
+@media (min-width: 480px) {
+  .show-mobile {
+    display: none;
+  }
+}
+
+/* Hide on desktop, show on tablet- */
+.hide-desktop {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop {
+    display: none;
+  }
+}
+
+/* Hide on tablet-, show on desktop */
+.show-desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .show-desktop {
+    display: block;
+  }
+}
+
+/* ========== RESPONSIVE PADDING ========== */
+
+.p-responsive {
+  padding: var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .p-responsive {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .p-responsive {
+    padding: var(--spacing-xl);
+  }
+}
+
+.px-responsive {
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .px-responsive {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .px-responsive {
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+  }
+}
+
+.py-responsive {
+  padding-top: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .py-responsive {
+    padding-top: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+  }
+}
+
+/* ========== RESPONSIVE GAP ========== */
+
+.gap-responsive {
+  gap: var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .gap-responsive {
+    gap: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .gap-responsive {
+    gap: var(--spacing-xl);
+  }
+}
+
+/* ========== RESPONSIVE BUTTONS ========== */
+
+.btn-responsive {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+}
+
+@media (min-width: 480px) {
+  .btn-responsive {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* ========== RESPONSIVE INPUTS ========== */
+
+.input-responsive {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  min-height: 40px;
+}
+
+@media (min-width: 480px) {
+  .input-responsive {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+    min-height: 44px;
+  }
+}
+
+/* ========== RESPONSIVE MARGIN ========== */
+
+.m-responsive {
+  margin: var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .m-responsive {
+    margin: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .m-responsive {
+    margin: var(--spacing-xl);
+  }
+}
+
+.mx-responsive {
+  margin-left: var(--spacing-md);
+  margin-right: var(--spacing-md);
+}
+
+@media (min-width: 480px) {
+  .mx-responsive {
+    margin-left: var(--spacing-lg);
+    margin-right: var(--spacing-lg);
+  }
+}
+
+/* ========== RESPONSIVE WIDTH ========== */
+
+.w-full {
+  width: 100%;
+}
+
+.w-auto {
+  width: auto;
+}
+
+.max-w-container {
+  max-width: 1280px;
+}
+
+/* ========== RESPONSIVE HEIGHT ========== */
+
+.h-auto {
+  height: auto;
+}
+
+.h-screen {
+  height: 100vh;
+}
+
+.h-screen-minus-header {
+  height: calc(100vh - 60px);
+}
+
+@media (min-width: 480px) {
+  .h-screen-minus-header {
+    height: calc(100vh - 70px);
+  }
+}
+
+/* ========== UTILITY CLASSES ========== */
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.opacity-50 {
+  opacity: 0.5;
+}
+
+.opacity-75 {
+  opacity: 0.75;
+}
+
+/* ========== RESPONSIVE PRINT ========== */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* ========== RESPONSIVE ACCESSIBILITY ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  :root {
+    --color-border: var(--color-gray-400);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #f3f4f6;
+    --color-text-light: #d1d5db;
+    --color-bg: #1f2937;
+    --color-bg-alt: #111827;
+    --color-border: #374151;
+    --color-primary-light: #312e81;
+  }
+}
