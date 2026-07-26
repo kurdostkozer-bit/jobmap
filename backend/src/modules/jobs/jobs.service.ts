@@ -295,20 +295,20 @@ export class JobsService {
 
     // Execute both queries in parallel for better performance
     const [jobs, total] = await Promise.all([
-      query.getRawMany(),
+      query.getMany(),
       totalQuery.getCount(),
     ]);
 
     // Transform jobs to match frontend API spec
     const transformedJobs = jobs.map(job => ({
       id: job.id,
-      latitude: parseFloat(job.anonymizedLatitude),
-      longitude: parseFloat(job.anonymizedLongitude),
+      latitude: parseFloat(job.anonymizedLatitude.toString()),
+      longitude: parseFloat(job.anonymizedLongitude.toString()),
       title: job.title,
       company: job.company?.name || 'Unknown Company',
-      salary: `${job.salaryMin || 'N/A'}-${job.salaryMax || 'N/A'}`,
-      salaryMin: job.salaryMin ? parseFloat(job.salaryMin) : null,
-      salaryMax: job.salaryMax ? parseFloat(job.salaryMax) : null,
+      salary: `${job.salaryMin?.toString() || 'N/A'}-${job.salaryMax?.toString() || 'N/A'}`,
+      salaryMin: job.salaryMin ? parseFloat(job.salaryMin.toString()) : null,
+      salaryMax: job.salaryMax ? parseFloat(job.salaryMax.toString()) : null,
       employmentType: job.jobType || 'Full-Time',
       category: job.category || 'Other',
       experienceLevel: job.experienceLevel || 'Entry',
