@@ -113,13 +113,42 @@ export const MapHomePage = () => {
   }, [allJobs]);
 
   const initializeSimpleMap = () => {
-    // Create map placeholder - in production use Google Maps API
-    const mapElement = mapRef.current;
-    mapElement.innerHTML = `
-      <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #667eea; font-weight: bold;">
-        🗺️ Google Maps (API Integration)
-      </div>
-    `;
+    // Create map with Google Maps API
+    if (mapRef.current && window.google) {
+      const iraqCenter = { lat: 33.1, lng: 44.0 };
+      
+      const map = new window.google.maps.Map(mapRef.current, {
+        zoom: 7,
+        center: iraqCenter,
+        mapTypeId: 'roadmap',
+        styles: [
+          {
+            featureType: 'all',
+            elementType: 'labels',
+            stylers: [{ color: '#667eea' }],
+          },
+        ],
+      });
+
+      // Add job markers
+      allJobs.forEach((job) => {
+        const marker = new window.google.maps.Marker({
+          position: { lat: job.lat, lng: job.lng },
+          map: map,
+          title: job.title,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: job.salaryMin > 5000 ? '#667eea' : job.salaryMin > 3000 ? '#48bb78' : '#ed8936',
+            fillOpacity: 0.8,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+          },
+        });
+
+        marker.addListener('click', () => setSelectedJob(job));
+      });
+    }
   };
 
   // Filter jobs
