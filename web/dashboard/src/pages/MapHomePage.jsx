@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -13,8 +13,24 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-// Custom job marker icon factory
-const createJobIcon = (salaryMin) => {
+/**
+ * Map Core Engine - P1
+ * 
+ * Architecture:
+ * 1. Onboarding → Get user GPS location
+ * 2. Map loads at user location
+ * 3. When user pans/zooms → Track map bounds (debounce 400ms)
+ * 4. Show "🔄 Search this area" button
+ * 5. User clicks → Send (north, south, east, west) to backend
+ * 6. Backend returns jobs in bounds
+ * 7. Update markers + job list + header count
+ * 8. Repeat from step 3
+ * 
+ * Key Principle: Map Bounds = Source of Truth
+ */
+
+// Create custom job marker icon
+const createJobMarkerIcon = (salaryMin) => {
   const color = salaryMin > 5000 ? '#667eea' : salaryMin > 3000 ? '#48bb78' : '#ed8936';
   const bgColor = salaryMin > 5000 ? '#e0e7ff' : salaryMin > 3000 ? '#f0fdf4' : '#fffbeb';
   
@@ -44,155 +60,191 @@ const createJobIcon = (salaryMin) => {
   });
 };
 
+// Create user location marker icon
+const createUserMarkerIcon = () => {
+  return L.icon({
+    iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23667eea" width="32" height="32"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="white"/></svg>',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+};
+
 export const MapHomePage = () => {
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [filteredJobs, setFilteredJobs] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  // ========== CORE STATE ==========
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [userLocation, setUserLocation] = useState({ lat: 33.3136, lng: 44.3615 }); // Baghdad default
+  
+  // ========== MAP STATE ==========
+  const [mapBounds, setMapBounds] = useState(null);
+  const [mapZoom, setMapZoom] = useState(7);
+  const [boundsDirty, setBoundsDirty] = useState(false); // User moved map
+  const mapRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  
+  // ========== JOB DATA STATE ==========
+  const [jobs, setJobs] = useState([]); // Jobs from API within bounds
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // ========== SEARCH STATE ==========
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock jobs data with Iraq coordinates
-  const allJobs = useMemo(() => [
-    {
-      id: 1,
-      title: 'Senior Developer',
-      company: 'Tech Solutions',
-      location: 'بغداد',
-      lat: 33.3136,
-      lng: 44.3615,
-      salary: '6000-8000',
-      salaryMin: 6000,
-      type: 'full-time',
-      description: 'نبحث عن مطور ويب خبير',
-      skills: ['React', 'Node.js', 'TypeScript'],
-      applicants: 12,
-    },
-    {
-      id: 2,
-      title: 'UI/UX Designer',
-      company: 'Design Studio',
-      location: 'بغداد',
-      lat: 33.3200,
-      lng: 44.3700,
-      salary: '3500-4500',
-      salaryMin: 3500,
-      type: 'full-time',
-      description: 'مصمم واجهات ذو خبرة',
-      skills: ['Figma', 'UI Design', 'Prototyping'],
-      applicants: 8,
-    },
-    {
-      id: 3,
-      title: 'Project Manager',
-      company: 'Project Pro',
-      location: 'الموصل',
-      lat: 36.3212,
-      lng: 43.1581,
-      salary: '4000-5500',
-      salaryMin: 4000,
-      type: 'full-time',
-      description: 'مدير مشاريع قيادي',
-      skills: ['Leadership', 'Agile', 'Planning'],
-      applicants: 15,
-    },
-    {
-      id: 4,
-      title: 'Data Analyst',
-      company: 'Data Hub',
-      location: 'كربلاء',
-      lat: 32.5086,
-      lng: 44.0055,
-      salary: '3000-4000',
-      salaryMin: 3000,
-      type: 'full-time',
-      description: 'محلل بيانات',
-      skills: ['Python', 'SQL', 'Tableau'],
-      applicants: 10,
-    },
-    {
-      id: 5,
-      title: 'Sales Manager',
-      company: 'Sales Pro',
-      location: 'البصرة',
-      lat: 30.4944,
-      lng: 47.8077,
-      salary: '2500-3500',
-      salaryMin: 2500,
-      type: 'full-time',
-      description: 'مدير مبيعات',
-      skills: ['Sales', 'Leadership', 'CRM'],
-      applicants: 5,
-    },
-    {
-      id: 6,
-      title: 'DevOps Engineer',
-      company: 'Cloud Systems',
-      location: 'أربيل',
-      lat: 36.1920,
-      lng: 44.0075,
-      salary: '5500-7000',
-      salaryMin: 5500,
-      type: 'full-time',
-      description: 'مهندس DevOps',
-      skills: ['Docker', 'Kubernetes', 'AWS'],
-      applicants: 7,
-    },
-  ], []);
-
-  // Check if user already completed onboarding
+  // ========== LIFECYCLE ==========
+  
+  // Check if onboarding already completed
   useEffect(() => {
     const locationGranted = localStorage.getItem('jobmap_location_granted');
     if (locationGranted === 'true') {
+      const savedLocation = localStorage.getItem('jobmap_last_location');
+      if (savedLocation) {
+        const loc = JSON.parse(savedLocation);
+        setUserLocation(loc);
+      }
       setShowOnboarding(false);
     }
   }, []);
 
-  // Initialize map
-  useEffect(() => {
+  // Handle map movement (pan/zoom)
+  const handleMapMove = useCallback(() => {
+    if (!mapRef.current) return;
+    
+    const bounds = mapRef.current.getBounds();
+    const zoom = mapRef.current.getZoom();
+    
+    setMapBounds(bounds);
+    setMapZoom(zoom);
+    setBoundsDirty(true);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      // Visual debounce complete
+    }, 400);
+  }, []);
+
+  // Execute search for current bounds
+  const handleSearchThisArea = useCallback(() => {
+    if (!mapBounds) return;
+    
+    const { _southWest, _northEast } = mapBounds;
+    
+    const searchParams = {
+      north: _northEast.lat,
+      south: _southWest.lat,
+      east: _northEast.lng,
+      west: _southWest.lng,
+    };
+    
+    console.log('Searching bounds:', searchParams);
+    
+    setIsSearching(true);
     setIsLoading(true);
+    
     setTimeout(() => {
-      setFilteredJobs(allJobs);
+      const jobsInBounds = [
+        {
+          id: 1,
+          latitude: 33.3136,
+          longitude: 44.3615,
+          company: 'Tech Solutions',
+          title: 'Senior Developer',
+          salary: '6000-8000',
+          type: 'full-time',
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          salaryMin: 6000,
+        },
+        {
+          id: 2,
+          latitude: 33.3200,
+          longitude: 44.3700,
+          company: 'Design Studio',
+          title: 'UI/UX Designer',
+          salary: '3500-4500',
+          type: 'full-time',
+          createdAt: new Date(Date.now() - 172800000).toISOString(),
+          salaryMin: 3500,
+        },
+        {
+          id: 6,
+          latitude: 36.1920,
+          longitude: 44.0075,
+          company: 'Cloud Systems',
+          title: 'DevOps Engineer',
+          salary: '5500-7000',
+          type: 'full-time',
+          createdAt: new Date(Date.now() - 259200000).toISOString(),
+          salaryMin: 5500,
+        },
+      ];
+      
+      setJobs(jobsInBounds);
+      setBoundsDirty(false);
       setIsLoading(false);
-    }, 300);
-  }, [allJobs]);
+      
+      console.log('Jobs found:', jobsInBounds.length);
+    }, 600);
+  }, [mapBounds]);
 
-  // Filter jobs based on search and location
-  useEffect(() => {
-    let result = allJobs;
-
-    if (searchTerm) {
-      result = result.filter(job =>
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  // Return to user location
+  const handleMyLocation = useCallback(() => {
+    if (mapRef.current) {
+      mapRef.current.flyTo([userLocation.lat, userLocation.lng], 12, {
+        duration: 0.5,
+      });
     }
-
-    if (selectedLocation) {
-      result = result.filter(job => job.location === selectedLocation);
-    }
-
-    setFilteredJobs(result);
-  }, [searchTerm, selectedLocation, allJobs]);
+  }, [userLocation]);
 
   // Handle onboarding completion
   const handleOnboardingComplete = (location) => {
     console.log('Onboarding complete:', location);
+    setUserLocation({
+      lat: location.latitude,
+      lng: location.longitude,
+    });
     setShowOnboarding(false);
     
-    // Save to localStorage for future visits
     localStorage.setItem('jobmap_location_granted', location.granted);
     if (location.granted) {
-      localStorage.setItem('jobmap_last_location', JSON.stringify(location));
+      localStorage.setItem('jobmap_last_location', JSON.stringify({
+        lat: location.latitude,
+        lng: location.longitude,
+      }));
     }
   };
 
-  // If onboarding is not complete, show it (AFTER all hooks)
+  // If onboarding not complete, show it (AFTER all hooks)
   if (showOnboarding) {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
-  const locations = [...new Set(allJobs.map(job => job.location))];
+  // ========== HELPER FUNCTIONS ==========
+
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Filter jobs by search term
+  const filteredJobs = jobs.filter(job =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.company.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Add distance to jobs
+  const jobsWithDistance = filteredJobs.map(job => ({
+    ...job,
+    distance: calculateDistance(userLocation.lat, userLocation.lng, job.latitude, job.longitude),
+  })).sort((a, b) => a.distance - b.distance);
+
+  // ========== RENDER ==========
 
   return (
     <div className="map-home-page">
@@ -200,41 +252,33 @@ export const MapHomePage = () => {
       <header className="map-header">
         <div className="header-left">
           <h1 className="app-logo">🗺️ JobMap</h1>
-          <p className="app-tagline">اكتشف فرص العمل حسب موقعك</p>
+        </div>
+
+        <div className="header-center">
+          <div className="job-count-badge">
+            💼 {jobsWithDistance.length} وظيفة
+          </div>
         </div>
 
         <div className="header-right">
-          <button className="btn-login">تسجيل دخول</button>
-          <button className="btn-employer">منطقة صاحب العمل</button>
+          <button className="btn-my-location" onClick={handleMyLocation}>
+            📍 موقعي
+          </button>
+          <button className="btn-login">دخول</button>
         </div>
       </header>
 
-      {/* Search & Filter Bar */}
-      <div className="search-filter-bar">
+      {/* Search Bar */}
+      <div className="search-bar">
         <div className="search-box">
           <input
             type="text"
-            placeholder="ابحث عن وظيفة..."
+            placeholder="ابحث في الوظائف..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
           <span className="search-icon">🔍</span>
-        </div>
-
-        <select
-          value={selectedLocation}
-          onChange={(e) => setSelectedLocation(e.target.value)}
-          className="location-select"
-        >
-          <option value="">جميع المحافظات</option>
-          {locations.map(location => (
-            <option key={location} value={location}>{location}</option>
-          ))}
-        </select>
-
-        <div className="filter-info">
-          📍 {filteredJobs.length} وظيفة
         </div>
       </div>
 
@@ -242,70 +286,90 @@ export const MapHomePage = () => {
       <div className="map-container-main">
         {/* Map Section */}
         <div className="map-section">
-          {isLoading ? (
-            <div className="map-loading">جاري تحميل الخريطة...</div>
-          ) : (
-            <MapContainer 
-              center={[33.1, 44.0]} 
-              zoom={7} 
-              style={{ width: '100%', height: '100%' }}
-              className="leaflet-map"
+          <MapContainer
+            ref={mapRef}
+            center={[userLocation.lat, userLocation.lng]}
+            zoom={mapZoom}
+            style={{ width: '100%', height: '100%' }}
+            className="leaflet-map"
+            onMoveend={handleMapMove}
+            onZoomend={handleMapMove}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            />
+
+            {/* User Location Marker */}
+            <Marker
+              position={[userLocation.lat, userLocation.lng]}
+              icon={createUserMarkerIcon()}
             >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              {filteredJobs.map((job) => (
-                <Marker 
-                  key={job.id} 
-                  position={[job.lat, job.lng]}
-                  icon={createJobIcon(job.salaryMin)}
-                  eventHandlers={{
-                    click: () => setSelectedJob(job),
-                  }}
-                >
-                  <Popup>
-                    <div style={{ textAlign: 'center' }}>
-                      <strong>{job.title}</strong>
-                      <p>{job.company}</p>
-                      <p>💰 {job.salary}</p>
-                      <button 
-                        onClick={() => setSelectedJob(job)}
-                        style={{
-                          padding: '8px 12px',
-                          background: '#667eea',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        عرض التفاصيل
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+              <Popup>
+                <div style={{ textAlign: 'center', fontSize: '12px' }}>
+                  <strong>📍 موقعك الحالي</strong>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* Job Markers */}
+            {jobsWithDistance.map((job) => (
+              <Marker
+                key={job.id}
+                position={[job.latitude, job.longitude]}
+                icon={createJobMarkerIcon(job.salaryMin)}
+                eventHandlers={{
+                  click: () => setSelectedJob(job),
+                }}
+              >
+                <Popup>
+                  <div style={{ textAlign: 'center', fontSize: '12px' }}>
+                    <strong>{job.title}</strong>
+                    <p>{job.company}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          {/* Search Button (shows when user moved map) */}
+          {boundsDirty && (
+            <div className="search-button-container">
+              <button
+                className="btn-search-area"
+                onClick={handleSearchThisArea}
+                disabled={isLoading}
+              >
+                {isLoading ? '⏳ جاري البحث...' : '🔄 ابحث في هذه المنطقة'}
+              </button>
+            </div>
+          )}
+
+          {/* Loading Overlay */}
+          {isLoading && (
+            <div className="map-loading-overlay">
+              <div className="spinner"></div>
+              <p>جاري البحث...</p>
+            </div>
           )}
         </div>
 
         {/* Sidebar - Jobs List */}
         <aside className="jobs-sidebar">
           <div className="sidebar-header">
-            <h3>الوظائف القريبة</h3>
-            <span className="jobs-count">{filteredJobs.length}</span>
+            <h3>الوظائف ({jobsWithDistance.length})</h3>
           </div>
 
           <div className="jobs-list">
             {isLoading ? (
               <div className="loading-state">جاري التحميل...</div>
-            ) : filteredJobs.length === 0 ? (
+            ) : jobsWithDistance.length === 0 ? (
               <div className="empty-state">
-                <p>لا توجد وظائف متطابقة</p>
+                <p>لا توجد وظائف في هذه المنطقة</p>
+                <p style={{ fontSize: '12px', opacity: 0.6 }}>حرّك الخريطة ثم ابحث</p>
               </div>
             ) : (
-              filteredJobs.map((job) => (
+              jobsWithDistance.map((job) => (
                 <div
                   key={job.id}
                   className={`job-card ${selectedJob?.id === job.id ? 'active' : ''}`}
@@ -313,19 +377,16 @@ export const MapHomePage = () => {
                 >
                   <div className="job-header">
                     <h4>{job.title}</h4>
-                    <span className="job-type">{job.type === 'full-time' ? 'دوام كامل' : 'جزئي'}</span>
+                    <span className="job-type">
+                      {job.type === 'full-time' ? 'دوام كامل' : 'جزئي'}
+                    </span>
                   </div>
 
                   <p className="job-company">{job.company}</p>
-                  <p className="job-location">📍 {job.location}</p>
-
-                  <div className="job-salary">
-                    <span className="label">الراتب:</span>
-                    <span className="amount">{job.salary}</span>
-                  </div>
-
+                  
                   <div className="job-meta">
-                    <span className="applicants">👥 {job.applicants}</span>
+                    <span className="salary">💰 {job.salary}</span>
+                    <span className="distance">📍 {job.distance.toFixed(1)} كم</span>
                   </div>
 
                   <button className="btn-apply">عرض التفاصيل</button>
@@ -336,60 +397,18 @@ export const MapHomePage = () => {
         </aside>
       </div>
 
-      {/* Job Details Sheet */}
+      {/* Job Details Bubble (small popup) */}
       {selectedJob && (
-        <div className="job-details-sheet">
-          <div className="sheet-header">
-            <div className="sheet-title">
-              <h2>{selectedJob.title}</h2>
-              <button 
-                className="sheet-close"
-                onClick={() => setSelectedJob(null)}
-              >
-                ✕
-              </button>
+        <div className="job-bubble">
+          <button className="bubble-close" onClick={() => setSelectedJob(null)}>✕</button>
+          <div className="bubble-content">
+            <h3>{selectedJob.title}</h3>
+            <p className="bubble-company">{selectedJob.company}</p>
+            <div className="bubble-meta">
+              <div>💰 {selectedJob.salary}</div>
+              <div>📍 {selectedJob.distance.toFixed(1)} كم</div>
             </div>
-          </div>
-
-          <div className="sheet-content">
-            <div className="detail-row">
-              <span className="label">الشركة:</span>
-              <span className="value">{selectedJob.company}</span>
-            </div>
-
-            <div className="detail-row">
-              <span className="label">الموقع:</span>
-              <span className="value">{selectedJob.location}</span>
-            </div>
-
-            <div className="detail-row">
-              <span className="label">الراتب:</span>
-              <span className="value salary">{selectedJob.salary} USD</span>
-            </div>
-
-            <div className="detail-row">
-              <span className="label">نوع الوظيفة:</span>
-              <span className="value">{selectedJob.type === 'full-time' ? 'دوام كامل' : 'جزئي'}</span>
-            </div>
-
-            <div className="detail-section">
-              <h4>الوصف</h4>
-              <p>{selectedJob.description}</p>
-            </div>
-
-            <div className="detail-section">
-              <h4>المهارات المطلوبة</h4>
-              <div className="skills-list">
-                {selectedJob.skills.map((skill, idx) => (
-                  <span key={idx} className="skill-tag">{skill}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="sheet-actions">
-              <button className="btn-save">❤️ حفظ</button>
-              <button className="btn-apply-now">تقديم الطلب</button>
-            </div>
+            <button className="btn-apply-bubble">تقديم الطلب</button>
           </div>
         </div>
       )}
