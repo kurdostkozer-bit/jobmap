@@ -47,6 +47,10 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
+  // Support root path checks from platforms like Render
+  app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'JobMap Backend is running' }));
+  app.head('/', (req, res) => res.sendStatus(200));
+
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT);
 
