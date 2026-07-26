@@ -99,7 +99,7 @@ export class CreateSavedSearchesTable1726000001000 implements MigrationInterface
       'saved_searches',
       new TableForeignKey({
         columnNames: ['userId'],
-        referencedColumnName: 'id',
+        referencedColumnNames: ['id'],
         referencedTableName: 'users',
         onDelete: 'CASCADE',
       })
