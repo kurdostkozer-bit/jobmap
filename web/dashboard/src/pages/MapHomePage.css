@@ -53,7 +53,8 @@
 }
 
 .btn-my-location,
-.btn-login {
+.btn-login,
+.btn-register {
   padding: var(--spacing-sm) var(--spacing-md);
   border: none;
   border-radius: var(--radius-md);
@@ -74,12 +75,14 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
-.btn-login {
+.btn-login,
+.btn-register {
   background: white;
   color: var(--color-primary);
 }
 
-.btn-login:hover {
+.btn-login:hover,
+.btn-register:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

@@ -20,7 +20,7 @@ export const useSocket = () => {
     }
 
     // Get API URL from environment
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+    const apiUrl = process.env.REACT_APP_API_URL || 'https://jobmap-backend-57v5.onrender.com/api';
     const socketUrl = apiUrl.replace('/api', ''); // Remove /api suffix
 
     console.log('🔌 Connecting to socket server:', socketUrl);

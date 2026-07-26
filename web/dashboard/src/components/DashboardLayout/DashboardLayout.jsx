@@ -14,7 +14,7 @@ export const DashboardLayout = ({ children, onTabChange }) => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/');
+    navigate('/login');
   };
 
   const handleTabChange = (tabId) => {

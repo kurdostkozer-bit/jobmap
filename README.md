@@ -345,10 +345,7 @@ npm run build
 
 | Document | Purpose |
 |----------|---------|
-| [FULL_PROJECT_DIAGNOSTIC.md](./FULL_PROJECT_DIAGNOSTIC.md) | Complete technical analysis |
-| [RUNNING_THE_APP.md](./RUNNING_THE_APP.md) | How to run locally |
-| [REACT_APP_READY.md](./REACT_APP_READY.md) | React testing guide |
-| [SESSION_SUMMARY.md](./SESSION_SUMMARY.md) | Session completion report |
+| [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) | Deployment and production status |
 
 ---
 
@@ -390,8 +387,8 @@ This project is proprietary. All rights reserved.
 ## 📞 Support
 
 For issues or questions:
-1. Check [RUNNING_THE_APP.md](./RUNNING_THE_APP.md)
-2. Review [FULL_PROJECT_DIAGNOSTIC.md](./FULL_PROJECT_DIAGNOSTIC.md)
+1. Check [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md)
+2. Review `render.yaml` and `web/dashboard/.env`
 3. Open an issue on GitHub
 
 ---
@@ -415,7 +412,7 @@ Next Steps:
 
 ---
 
-**Ready to contribute?** Clone this repo and follow [RUNNING_THE_APP.md](./RUNNING_THE_APP.md)
+**Ready to contribute?** Clone this repo and review [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md)
 
 **Questions?** Check the [documentation](./docs) or open an issue
 

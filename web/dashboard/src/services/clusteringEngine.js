@@ -62,14 +62,14 @@ export class ClusteringEngine {
    * Linear interpolation for missing levels
    */
   getPixelRadius(zoomLevel) {
-    const zoom = Math.round(zoomLevel);
-    if (this.pixelRadiusMap[zoom]) {
-      return this.pixelRadiusMap[zoom];
-    }
-
-    // Interpolate between known values
+    const zoom = Math.max(7, Math.min(18, zoomLevel));
     const lower = Math.floor(zoom);
     const upper = Math.ceil(zoom);
+
+    if (lower === upper && this.pixelRadiusMap[lower]) {
+      return this.pixelRadiusMap[lower];
+    }
+
     if (this.pixelRadiusMap[lower] && this.pixelRadiusMap[upper]) {
       const fraction = zoom - lower;
       return (
@@ -78,7 +78,15 @@ export class ClusteringEngine {
       );
     }
 
-    return 80; // Default
+    if (this.pixelRadiusMap[lower]) {
+      return this.pixelRadiusMap[lower];
+    }
+
+    if (this.pixelRadiusMap[upper]) {
+      return this.pixelRadiusMap[upper];
+    }
+
+    return this.pixelRadiusMap[11];
   }
 
   /**

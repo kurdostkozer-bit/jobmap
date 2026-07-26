@@ -124,8 +124,11 @@ describe('ClusteringEngine', () => {
     it('should cluster nearby jobs at low zoom', () => {
       const result = engine.cluster(mockJobs, 13);
       // Jobs 1 & 2 are very close, job 3 is far
-      expect(result.clusters.length + result.unclustered.length).toBe(mockJobs.length);
-      expect(result.stats.total).toBe(3);
+      expect(result.stats.total).toBe(mockJobs.length);
+      expect(result.stats.clustered).toBe(2);
+      expect(result.unclustered.length).toBe(1);
+      expect(result.clusters.length).toBe(1);
+      expect(result.clusters[0].count).toBe(2);
     });
 
     it('should calculate correct cluster statistics', () => {

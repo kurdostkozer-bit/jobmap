@@ -6,7 +6,10 @@ class ApiClient {
 
   late Dio _dio;
   final _storage = const FlutterSecureStorage();
-  static const String baseUrl = 'http://localhost:3000/api';
+  static const String baseUrl = String.fromEnvironment(
+    'JOBMAP_API_URL',
+    defaultValue: 'http://localhost:3000/api',
+  );
 
   factory ApiClient() {
     return _instance;
@@ -22,7 +25,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storage.read(key: 'auth_token');
+          final token = await _storage.read(key: 'access_token');
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -30,7 +33,7 @@ class ApiClient {
         },
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
-            await _storage.delete(key: 'auth_token');
+            await _storage.delete(key: 'access_token');
           }
           return handler.next(error);
         },
@@ -81,7 +84,13 @@ class ApiClient {
     return 'خطأ في الاتصال';
   }
 
-  Future<void> saveToken(String token) => _storage.write(key: 'auth_token', value: token);
-  Future<String?> getToken() => _storage.read(key: 'auth_token');
-  Future<void> clearToken() => _storage.delete(key: 'auth_token');
+  Future<void> saveToken(String token) => _storage.write(key: 'access_token', value: token);
+  Future<String?> getToken() => _storage.read(key: 'access_token');
+
+  Future<void> clearToken() async {
+    await Future.wait([
+      _storage.delete(key: 'access_token'),
+      _storage.delete(key: 'refresh_token'),
+    ]);
+  }
 }

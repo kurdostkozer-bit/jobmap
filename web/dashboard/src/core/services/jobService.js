@@ -2,7 +2,7 @@
  * Job Service - Handles all job-related API calls
  */
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3000';
+import apiClient from '../api/apiClient';
 
 class JobService {
   /**
@@ -26,19 +26,7 @@ class JobService {
         params.append('sw_lng', filters.bounds.west);
       }
 
-      const response = await fetch(`${API_BASE}/api/jobs?${params}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getToken()}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch jobs: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return await apiClient.get(`/jobs?${params}`);
     } catch (error) {
       console.error('Error fetching jobs:', error);
       throw error;
@@ -50,19 +38,7 @@ class JobService {
    */
   async searchJobs(query) {
     try {
-      const response = await fetch(`${API_BASE}/api/jobs/search?q=${encodeURIComponent(query)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getToken()}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return await apiClient.get(`/jobs/search?q=${encodeURIComponent(query)}`);
     } catch (error) {
       console.error('Error searching jobs:', error);
       throw error;
@@ -74,23 +50,10 @@ class JobService {
    */
   async applyForJob(jobId, applicationData) {
     try {
-      const response = await fetch(`${API_BASE}/api/applications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getToken()}`,
-        },
-        body: JSON.stringify({
-          jobId,
-          ...applicationData,
-        }),
+      return await apiClient.post('/applications', {
+        jobId,
+        ...applicationData,
       });
-
-      if (!response.ok) {
-        throw new Error(`Application failed: ${response.statusText}`);
-      }
-
-      return await response.json();
     } catch (error) {
       console.error('Error applying for job:', error);
       throw error;
@@ -102,20 +65,7 @@ class JobService {
    */
   async saveJob(jobId) {
     try {
-      const response = await fetch(`${API_BASE}/api/users/saved-jobs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getToken()}`,
-        },
-        body: JSON.stringify({ jobId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Save failed: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return await apiClient.post('/users/saved-jobs', { jobId });
     } catch (error) {
       console.error('Error saving job:', error);
       throw error;
@@ -126,7 +76,7 @@ class JobService {
    * Helper: Get JWT token from localStorage
    */
   getToken() {
-    return localStorage.getItem('jwt_token') || '';
+    return localStorage.getItem('auth_token') || '';
   }
 }
 

@@ -42,7 +42,7 @@ function LoginPage() {
     try {
       const result = await dispatch(login({ email, password })).unwrap();
       if (result) {
-        navigate('/dashboard');
+        navigate('/home');
       }
     } catch (err) {
       setErrors({ submit: err?.message || 'خطأ في تسجيل الدخول' });
@@ -124,17 +124,15 @@ function LoginPage() {
         </form>
 
         <div className="login-footer">
-          <p>
-            لا تملك حسابا؟{' '}
-            <button
-              type="button"
-              onClick={handleNavigateToRegister}
-              className="register-link"
-              disabled={isLoading}
-            >
-              سجل الآن
-            </button>
-          </p>
+          <p>إذا لم يكن لديك حساب، يمكنك إنشاء واحد الآن.</p>
+          <button
+            type="button"
+            onClick={handleNavigateToRegister}
+            className="register-cta"
+            disabled={isLoading}
+          >
+            إنشاء حساب جديد
+          </button>
         </div>
       </div>
     </div>

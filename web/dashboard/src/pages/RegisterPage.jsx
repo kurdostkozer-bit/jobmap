@@ -70,7 +70,7 @@ function RegisterPage() {
     try {
       const result = await dispatch(register(formData)).unwrap();
       if (result) {
-        // navigate('/dashboard');
+        navigate('/home');
       }
     } catch (err) {
       setErrors({ submit: err?.message || 'خطأ في إنشاء الحساب' });
@@ -206,17 +206,15 @@ function RegisterPage() {
         </form>
 
         <div className="register-footer">
-          <p>
-            لديك حساب بالفعل؟{' '}
-            <button
-              type="button"
-              onClick={handleNavigateToLogin}
-              className="login-link"
-              disabled={isLoading}
-            >
-              سجل الدخول
-            </button>
-          </p>
+          <p>إذا كان لديك حساب بالفعل، فارجع إلى الدخول.</p>
+          <button
+            type="button"
+            onClick={handleNavigateToLogin}
+            className="login-cta"
+            disabled={isLoading}
+          >
+            الذهاب إلى تسجيل الدخول
+          </button>
         </div>
       </div>
     </div>

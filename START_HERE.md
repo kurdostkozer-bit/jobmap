@@ -15,24 +15,12 @@
 ## ⚡ Quick Links (Choose One)
 
 ### 🏃 In a Hurry? (5 minutes)
-👉 [IMMEDIATE_NEXT_STEPS.md](./IMMEDIATE_NEXT_STEPS.md)  
-Test React app right now in your browser
-
-### 📖 Want Full Details? (30 minutes)
 👉 [README.md](./README.md)  
 Complete project overview and how to run locally
 
-### 📊 Need the Diagnostic? (15 minutes)
-👉 [FULL_PROJECT_DIAGNOSTIC.md](./FULL_PROJECT_DIAGNOSTIC.md)  
-Technical analysis of all components
-
-### 📋 Want Sprint Status? (10 minutes)
-👉 [SPRINT_1_STATUS.md](./SPRINT_1_STATUS.md)  
-Current progress and what's left to do
-
-### 📝 Session Summary? (10 minutes)
-👉 [SESSION_SUMMARY.md](./SESSION_SUMMARY.md)  
-What was accomplished in this session
+### 📊 Deployment Status
+👉 [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md)  
+Where the project is hosted and how it is deployed
 
 ---
 
@@ -99,7 +87,7 @@ Next Step: Test on your devices
 2. **Then (5 min):** Open React app and test it
 3. **Then (15 min):** Read [README.md](./README.md)
 4. **Then (30 min):** Run Flutter and test it
-5. **Finally (10 min):** Read [SPRINT_1_STATUS.md](./SPRINT_1_STATUS.md)
+5. **Finally (10 min):** Check [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md)
 
 ---
 
@@ -152,7 +140,7 @@ flutter run
 ## ❓ FAQ
 
 **Q: Where do I start?**  
-A: Open [IMMEDIATE_NEXT_STEPS.md](./IMMEDIATE_NEXT_STEPS.md)
+A: Open [README.md](./README.md) or [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md)
 
 **Q: Is the backend running?**  
 A: Check: `curl http://localhost:3000/api/health`
@@ -175,11 +163,8 @@ A: Register → Login → Auto-Login → Logout → Check errors
 
 | Resource | Location |
 |----------|----------|
-| **Testing Guide** | [IMMEDIATE_NEXT_STEPS.md](./IMMEDIATE_NEXT_STEPS.md) |
+| **Deployment Status** | [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) |
 | **Project Overview** | [README.md](./README.md) |
-| **Technical Details** | [FULL_PROJECT_DIAGNOSTIC.md](./FULL_PROJECT_DIAGNOSTIC.md) |
-| **Sprint Status** | [SPRINT_1_STATUS.md](./SPRINT_1_STATUS.md) |
-| **Session Report** | [SESSION_SUMMARY.md](./SESSION_SUMMARY.md) |
 | **GitHub Repo** | https://github.com/kurdostkozer-bit/jobmap.git |
 | **Backend** | http://localhost:3000 |
 | **React App** | `web/dashboard/public/app.html` |
@@ -222,10 +207,10 @@ A: Register → Login → Auto-Login → Logout → Check errors
 
 ## 🚀 Next Steps
 
-1. **Test React** (now) - [IMMEDIATE_NEXT_STEPS.md](./IMMEDIATE_NEXT_STEPS.md)
-2. **Test Flutter** (soon) - Follow same guide
-3. **Report results** - Document what passed/failed
-4. **Sprint 1 closes** - After QA approval
+1. **Test React** (now) - open the React app in browser
+2. **Test Flutter** (soon) - follow the same guide
+3. **Report results** - document what passed/failed
+4. **Sprint 1 closes** - after QA approval
 
 ---
 
@@ -258,7 +243,6 @@ IF you have 30 minutes:
 
 IF you want full context:
   ├─ Read README.md (15 min)
-  ├─ Read DIAGNOSTIC.md (15 min)
   ├─ Test React (5 min)
   ├─ Test Flutter (30 min)
   └─ Report results
@@ -268,9 +252,9 @@ IF you want full context:
 
 ## 💬 Communication
 
-- **Issues?** Check [IMMEDIATE_NEXT_STEPS.md](./IMMEDIATE_NEXT_STEPS.md) troubleshooting
+- **Issues?** Check [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md) troubleshooting
 - **Questions?** See [README.md](./README.md) FAQ
-- **Details?** Read [FULL_PROJECT_DIAGNOSTIC.md](./FULL_PROJECT_DIAGNOSTIC.md)
+- **Details?** Check [DEPLOYMENT_STATUS.md](./DEPLOYMENT_STATUS.md)
 
 ---
 
@@ -278,7 +262,7 @@ IF you want full context:
 
 Everything is set up and waiting for you. Pick a guide above and start testing!
 
-**Recommended first step:** [IMMEDIATE_NEXT_STEPS.md](./IMMEDIATE_NEXT_STEPS.md) (5 minutes)
+**Recommended first step:** Read [README.md](./README.md) (5 minutes)
 
 ---
 

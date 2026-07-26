@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,7 +9,10 @@ import MarkerManager, {
   createUserMarkerIcon
 } from '../services/markerEngine';
 import { ClusteringEngine, clusteringUtils } from '../services/clusteringEngine';
+import apiClient from '../core/api/apiClient';
 import './MapHomePage.css';
+
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -83,7 +87,6 @@ export const MapHomePage = () => {
   
   // ========== CACHE ==========
   const cacheRef = useRef(new Map());
-  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   
   // ========== MARKER ENGINE ==========
   const markerManagerRef = useRef(null);
@@ -116,102 +119,8 @@ export const MapHomePage = () => {
            Math.abs(sw.lng - oldSw.lng) > threshold;
   }, []);
 
-  // Auto-search on first load when bounds become available
-  useEffect(() => {
-    // Wait for map to initialize and bounds to be set
-    if (mapRef.current && mapBounds && !jobs.length && !isLoading) {
-      const timer = setTimeout(() => {
-        console.log('First load: Auto-searching initial bounds...');
-        // Trigger search without circular dependency
-        if (!hasBoundsChanged(mapBounds, previousBounds)) {
-          console.log('Bounds unchanged, skipping search...');
-          return;
-        }
-        
-        // Execute search directly here to avoid dependency loop
-        const { _southWest, _northEast } = mapBounds;
-        const searchPayload = {
-          bounds: {
-            north: _northEast.lat,
-            south: _southWest.lat,
-            east: _northEast.lng,
-            west: _southWest.lng,
-          },
-          zoom: mapZoom,
-          center: {
-            lat: mapCenter[0],
-            lng: mapCenter[1],
-          },
-          filters: {},
-          limit: 100,
-          offset: 0,
-        };
-        
-        console.log('First search payload:', searchPayload);
-        setIsLoading(true);
-        
-        const apiUrl = process.env.REACT_APP_API_URL || 'https://jobmap-backend-57v5.onrender.com/api';
-        fetch(`${apiUrl}/jobs/search/bounds`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(searchPayload),
-        })
-          .then(r => r.json())
-          .then(data => {
-            console.log('First search result:', data);
-            setJobs(data.jobs || []);
-            setJobsStats({
-              total: data.stats?.totalFound || 0,
-              filtered: data.stats?.returnedCount || 0,
-            });
-            const clustering = clusteringEngineRef.current.cluster(data.jobs || [], mapZoom);
-            setClusteredResults(clustering);
-          })
-          .catch(err => {
-            console.error('First search error:', err);
-            setError('تعذر تحميل الوظائف');
-          })
-          .finally(() => setIsLoading(false));
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [mapBounds, mapZoom, mapCenter, jobs.length, isLoading, previousBounds, hasBoundsChanged]);
-
-  // Check onboarding status
-  useEffect(() => {
-    const locationGranted = localStorage.getItem('jobmap_location_granted');
-    if (locationGranted === 'true') {
-      const savedLocation = localStorage.getItem('jobmap_last_location');
-      if (savedLocation) {
-        const loc = JSON.parse(savedLocation);
-        setUserLocation(loc);
-      }
-      setShowOnboarding(false);
-    }
-  }, []);
-
-  // Handle map movement
-  const handleMapMove = useCallback(() => {
-    if (!mapRef.current) return;
-    
-    const bounds = mapRef.current.getBounds();
-    const zoom = mapRef.current.getZoom();
-    const center = mapRef.current.getCenter();
-    
-    setMapBounds(bounds);
-    setMapZoom(zoom);
-    setMapCenter([center.lat, center.lng]);
-    setBoundsDirty(true);
-    setError(null);
-    
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-  }, []);
-
   // Execute search
-  const handleSearchThisArea = useCallback(() => {
+  const handleSearchThisArea = useCallback(async () => {
     if (!mapBounds) return;
     
     if (!hasBoundsChanged(mapBounds, previousBounds)) {
@@ -254,123 +163,156 @@ export const MapHomePage = () => {
     console.log('Searching bounds:', searchPayload);
     setIsLoading(true);
     setError(null);
-    
-    // Call real API
-    const apiUrl = process.env.REACT_APP_API_URL || 'https://jobmap-backend-57v5.onrender.com/api';
-    fetch(`${apiUrl}/jobs/search/bounds`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(searchPayload),
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('API Response:', data);
-        
-        setJobs(data.jobs || []);
-        setJobsStats({
-          total: data.stats?.totalFound || 0,
-          filtered: data.stats?.returnedCount || 0,
-        });
-        setPreviousBounds(mapBounds);
-        setBoundsDirty(false);
-        setError(null);
-        setRetryCount(0);
-        
-        // ========== CLUSTERING ENGINE - P2-B ==========
-        // Run clustering on fetched jobs
-        const clustering = clusteringEngineRef.current.cluster(data.jobs || [], mapZoom);
-        setClusteredResults(clustering);
-        console.log('Clustering results:', clustering);
-        
-        // Cache results
-        cacheRef.current.set(cacheKey, {
-          jobs: data.jobs || [],
-          stats: data.stats || {},
-          timestamp: Date.now(),
-        });
-      })
-      .catch(err => {
-        console.error('Search error:', err);
-        setError('تعذر تحميل الوظائف في هذه المنطقة');
-        setRetryCount(prev => prev + 1);
-      })
-      .finally(() => {
-        setIsLoading(false);
+
+    try {
+      const data = await apiClient.post('/jobs/search/bounds', searchPayload);
+      console.log('API Response:', data);
+
+      setJobs(data.jobs || []);
+      setJobsStats({
+        total: data.stats?.totalFound || 0,
+        filtered: data.stats?.returnedCount || 0,
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      setPreviousBounds(mapBounds);
+      setBoundsDirty(false);
+      setError(null);
+      setRetryCount(0);
+
+      // ========== CLUSTERING ENGINE - P2-B ==========
+      // Run clustering on fetched jobs
+      const clustering = clusteringEngineRef.current.cluster(data.jobs || [], mapZoom);
+      setClusteredResults(clustering);
+      console.log('Clustering results:', clustering);
+
+      // Cache results
+      cacheRef.current.set(cacheKey, {
+        jobs: data.jobs || [],
+        stats: data.stats || {},
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.error('Search error:', err);
+      setError('تعذر تحميل الوظائف في هذه المنطقة');
+      setRetryCount(prev => prev + 1);
+    } finally {
+      setIsLoading(false);
+    }
   }, [mapBounds, mapZoom, mapCenter, previousBounds, hasBoundsChanged]);
 
-  // My Location
-  const handleMyLocation = useCallback(() => {
-    if (mapRef.current) {
-      mapRef.current.flyTo([userLocation.lat, userLocation.lng], 12, {
-        duration: 0.5,
+  // Auto-search on first load when bounds become available
+  useEffect(() => {
+    // Wait for map to initialize and bounds to be set
+    if (mapRef.current && mapBounds && !jobs.length && !isLoading) {
+      console.log('✅ Auto-search conditions met:', {
+        hasMapRef: !!mapRef.current,
+        hasBounds: !!mapBounds,
+        jobsEmpty: !jobs.length,
+        notLoading: !isLoading,
       });
       
-      setTimeout(() => {
-        const bounds = mapRef.current.getBounds();
-        setMapBounds(bounds);
-        setMapZoom(12);
-        const center = mapRef.current.getCenter();
-        setMapCenter([center.lat, center.lng]);
-        setBoundsDirty(true);
+      const timer = setTimeout(() => {
+        console.log('🔍 Starting first load auto-search...');
         
-        setTimeout(() => {
-          handleSearchThisArea();
-        }, 100);
-      }, 600);
+        handleSearchThisArea();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    } else {
+      console.log('⏭️ Auto-search conditions not met:', {
+        hasMapRef: !!mapRef.current,
+        hasBounds: !!mapBounds,
+        jobsEmpty: !jobs.length,
+        notLoading: !isLoading,
+      });
     }
+  }, [mapBounds, mapZoom, mapCenter, jobs.length, isLoading, previousBounds, handleSearchThisArea]);
+
+  // Check onboarding status
+  useEffect(() => {
+    const locationGranted = localStorage.getItem('jobmap_location_granted');
+    if (locationGranted === 'true') {
+      const savedLocation = localStorage.getItem('jobmap_last_location');
+      if (savedLocation) {
+        const loc = JSON.parse(savedLocation);
+        setUserLocation(loc);
+      }
+      setShowOnboarding(false);
+    }
+  }, []);
+
+  // Handle map movement
+  const handleMapMove = useCallback(() => {
+    if (!mapRef.current) return;
+    
+    const bounds = mapRef.current.getBounds();
+    const zoom = mapRef.current.getZoom();
+    const center = mapRef.current.getCenter();
+    
+    setMapBounds(bounds);
+    setMapZoom(zoom);
+    setMapCenter([center.lat, center.lng]);
+    setBoundsDirty(true);
+    setError(null);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+  }, []);
+
+  const handleMapReady = useCallback((mapInstance) => {
+    if (!mapInstance) return;
+
+    mapRef.current = mapInstance;
+    const bounds = mapInstance.getBounds();
+    const zoom = mapInstance.getZoom();
+    const center = bounds.getCenter();
+
+    setMapBounds(bounds);
+    setMapZoom(zoom);
+    setMapCenter([center.lat, center.lng]);
+  }, []);
+
+  const handleMyLocation = useCallback(() => {
+    if (!mapRef.current) return;
+
+    mapRef.current.flyTo([userLocation.lat, userLocation.lng], 12, {
+      duration: 0.5,
+    });
+
+    setTimeout(() => {
+      if (!mapRef.current) return;
+      const bounds = mapRef.current.getBounds();
+      const center = mapRef.current.getCenter();
+
+      setMapBounds(bounds);
+      setMapZoom(12);
+      setMapCenter([center.lat, center.lng]);
+      setBoundsDirty(true);
+
+      setTimeout(() => {
+        handleSearchThisArea();
+      }, 100);
+    }, 600);
   }, [userLocation, handleSearchThisArea]);
 
-  // Onboarding complete
-  const handleOnboardingComplete = (location) => {
-    console.log('Onboarding complete:', location);
-    setUserLocation({
-      lat: location.latitude,
-      lng: location.longitude,
-    });
-    setShowOnboarding(false);
-    
-    localStorage.setItem('jobmap_location_granted', location.granted);
-    if (location.granted) {
-      localStorage.setItem('jobmap_last_location', JSON.stringify({
-        lat: location.latitude,
-        lng: location.longitude,
-      }));
-    }
-  };
-
-  // Early return if onboarding
-  if (showOnboarding) {
-    return <OnboardingPage onComplete={handleOnboardingComplete} />;
-  }
-
-  // Calculate distance
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) * Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
-  // Filter and sort jobs
   const jobsWithDistance = jobs
-    .filter(job =>
+    .filter((job) =>
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.company.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .map(job => ({
+    .map((job) => ({
       ...job,
       distance: calculateDistance(userLocation.lat, userLocation.lng, job.latitude, job.longitude),
     }))
@@ -378,23 +320,21 @@ export const MapHomePage = () => {
 
   return (
     <div className="map-home-page">
-      {/* Header */}
       <header className="map-header">
         <div className="header-left">
           <h1 className="app-logo">🗺️ JobMap</h1>
-        </div>
-
-        <div className="header-center">
-          <div className="job-count-badge">
-            💼 {jobsStats.filtered} وظيفة
-          </div>
         </div>
 
         <div className="header-right">
           <button className="btn-my-location" onClick={handleMyLocation} disabled={isLoading}>
             📍 موقعي
           </button>
-          <button className="btn-login">دخول</button>
+          <button className="btn-login" onClick={() => navigate('/login')}>
+            دخول
+          </button>
+          <button className="btn-register" onClick={() => navigate('/register')}>
+            تسجيل
+          </button>
         </div>
       </header>
 
@@ -417,7 +357,7 @@ export const MapHomePage = () => {
         {/* Map Section */}
         <div className="map-section">
           <MapContainer
-            ref={mapRef}
+            whenCreated={handleMapReady}
             center={[userLocation.lat, userLocation.lng]}
             zoom={mapZoom}
             style={{ width: '100%', height: '100%' }}

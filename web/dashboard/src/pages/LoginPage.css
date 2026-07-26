@@ -157,25 +157,31 @@
 }
 
 .login-footer p {
-  margin: 0;
+  margin: 0 0 12px 0;
   font-size: 14px;
   color: #666;
 }
 
-.register-link {
-  background: none;
-  border: none;
-  color: #667eea;
+.register-cta {
+  padding: 12px 20px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font-size: inherit;
-  text-decoration: underline;
-  padding: 0;
-  margin-left: 4px;
+  width: 100%;
+  max-width: 260px;
 }
 
-.register-link:hover:not(:disabled) {
-  color: #764ba2;
+.register-cta:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.register-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .register-link:disabled {
