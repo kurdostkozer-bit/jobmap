@@ -3,14 +3,17 @@ import { config } from 'dotenv';
 
 config();
 
-// Determine if we're running from source (ts-node) or compiled (dist)
-const isProduction = process.env.NODE_ENV === 'production';
-const entitiesPath = isProduction 
-  ? 'dist/modules/**/entities/**/*.entity.js'
-  : 'src/modules/**/entities/**/*.entity.ts';
-const migrationsPath = isProduction
-  ? 'dist/database/migrations/**/*.js'
-  : 'src/database/migrations/**/*.ts';
+// Import entities directly to ensure TypeORM can find them
+import { User } from '../modules/users/entities/user.entity';
+import { Company } from '../modules/companies/entities/company.entity';
+import { Job } from '../modules/jobs/entities/job.entity';
+import { SavedSearch } from '../modules/saved-searches/entities/saved-search.entity';
+import { Application } from '../modules/applications/entities/application.entity';
+import { Notification } from '../modules/notifications/entities/notification.entity';
+
+// Import migrations
+import { CreateUsersTable1721903400000 } from './migrations/1721903400000-CreateUsersTable';
+import { CreateSavedSearchesTable1726000001000 } from './migrations/1726000001000-CreateSavedSearchesTable';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -19,8 +22,11 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'jobmap',
-  entities: [entitiesPath],
-  migrations: [migrationsPath],
+  entities: [User, Company, Job, SavedSearch, Application, Notification],
+  migrations: [
+    CreateUsersTable1721903400000,
+    CreateSavedSearchesTable1726000001000,
+  ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
   migrationsRun: false,
