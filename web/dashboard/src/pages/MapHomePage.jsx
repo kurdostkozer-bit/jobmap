@@ -122,12 +122,61 @@ export const MapHomePage = () => {
     if (mapRef.current && mapBounds && !jobs.length && !isLoading) {
       const timer = setTimeout(() => {
         console.log('First load: Auto-searching initial bounds...');
-        handleSearchThisArea();
+        // Trigger search without circular dependency
+        if (!hasBoundsChanged(mapBounds, previousBounds)) {
+          console.log('Bounds unchanged, skipping search...');
+          return;
+        }
+        
+        // Execute search directly here to avoid dependency loop
+        const { _southWest, _northEast } = mapBounds;
+        const searchPayload = {
+          bounds: {
+            north: _northEast.lat,
+            south: _southWest.lat,
+            east: _northEast.lng,
+            west: _southWest.lng,
+          },
+          zoom: mapZoom,
+          center: {
+            lat: mapCenter[0],
+            lng: mapCenter[1],
+          },
+          filters: {},
+          limit: 100,
+          offset: 0,
+        };
+        
+        console.log('First search payload:', searchPayload);
+        setIsLoading(true);
+        
+        const apiUrl = process.env.REACT_APP_API_URL || 'https://jobmap-backend-57v5.onrender.com/api';
+        fetch(`${apiUrl}/jobs/search/bounds`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(searchPayload),
+        })
+          .then(r => r.json())
+          .then(data => {
+            console.log('First search result:', data);
+            setJobs(data.jobs || []);
+            setJobsStats({
+              total: data.stats?.totalFound || 0,
+              filtered: data.stats?.returnedCount || 0,
+            });
+            const clustering = clusteringEngineRef.current.cluster(data.jobs || [], mapZoom);
+            setClusteredResults(clustering);
+          })
+          .catch(err => {
+            console.error('First search error:', err);
+            setError('تعذر تحميل الوظائف');
+          })
+          .finally(() => setIsLoading(false));
       }, 500);
       
       return () => clearTimeout(timer);
     }
-  }, [mapBounds, jobs.length, isLoading, handleSearchThisArea]);
+  }, [mapBounds, mapZoom, mapCenter, jobs.length, isLoading, previousBounds, hasBoundsChanged]);
 
   // Check onboarding status
   useEffect(() => {
