@@ -73,6 +73,7 @@ export const MapHomePage = () => {
   const [boundsDirty, setBoundsDirty] = useState(false);
   const mapRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const requestIdRef = useRef(0);
   
   // ========== JOB DATA STATE ==========
   const [jobs, setJobs] = useState([]);
@@ -95,6 +96,9 @@ export const MapHomePage = () => {
   const clusteringEngineRef = useRef(null);
   const [clusteredResults, setClusteredResults] = useState({ clusters: [], unclustered: [], stats: {} });
   
+  // Prevent duplicate auto-search in React Strict Mode or repeated initial renders
+  const autoSearchTriggeredRef = useRef(false);
+
   // Initialize Engines
   useEffect(() => {
     if (!markerManagerRef.current) {
@@ -106,31 +110,44 @@ export const MapHomePage = () => {
   }, []);
   
   // Check if bounds significantly changed
+  const normalizeBounds = useCallback((bounds) => {
+    if (!bounds) return null;
+    const southWest = bounds.getSouthWest();
+    const northEast = bounds.getNorthEast();
+    return {
+      south: southWest.lat,
+      west: southWest.lng,
+      north: northEast.lat,
+      east: northEast.lng,
+      bbox: `${northEast.lat.toFixed(6)}-${southWest.lat.toFixed(6)}-${northEast.lng.toFixed(6)}-${southWest.lng.toFixed(6)}`,
+    };
+  }, []);
+
   const hasBoundsChanged = useCallback((newBounds, oldBounds) => {
     if (!oldBounds) return true;
-    
-    const threshold = 0.01;
-    const { _northEast: ne, _southWest: sw } = newBounds;
-    const { _northEast: oldNe, _southWest: oldSw } = oldBounds;
-    
-    return Math.abs(ne.lat - oldNe.lat) > threshold ||
-           Math.abs(ne.lng - oldNe.lng) > threshold ||
-           Math.abs(sw.lat - oldSw.lat) > threshold ||
-           Math.abs(sw.lng - oldSw.lng) > threshold;
+    if (!newBounds) return true;
+
+    const threshold = 0.0005;
+    return (
+      Math.abs(newBounds.north - oldBounds.north) > threshold ||
+      Math.abs(newBounds.south - oldBounds.south) > threshold ||
+      Math.abs(newBounds.east - oldBounds.east) > threshold ||
+      Math.abs(newBounds.west - oldBounds.west) > threshold
+    );
   }, []);
 
   // Execute search
   const handleSearchThisArea = useCallback(async () => {
     if (!mapBounds) return;
-    
+    if (isLoading) return;
+
     if (!hasBoundsChanged(mapBounds, previousBounds)) {
       console.log('Bounds unchanged, checking cache...');
       setBoundsDirty(false);
       return;
     }
-    
-    const { _southWest, _northEast } = mapBounds;
-    const cacheKey = `${_northEast.lat.toFixed(4)}-${_southWest.lat.toFixed(4)}-${_northEast.lng.toFixed(4)}-${_southWest.lng.toFixed(4)}`;
+
+    const cacheKey = `${mapBounds.bbox}-${mapZoom}`;
     
     // Check cache
     const cached = cacheRef.current.get(cacheKey);
@@ -145,10 +162,10 @@ export const MapHomePage = () => {
     
     const searchPayload = {
       bounds: {
-        north: _northEast.lat,
-        south: _southWest.lat,
-        east: _northEast.lng,
-        west: _southWest.lng,
+        north: mapBounds.north,
+        south: mapBounds.south,
+        east: mapBounds.east,
+        west: mapBounds.west,
       },
       zoom: mapZoom,
       center: {
@@ -164,14 +181,21 @@ export const MapHomePage = () => {
     setIsLoading(true);
     setError(null);
 
+    const requestId = ++requestIdRef.current;
     try {
       const data = await apiClient.post('/jobs/search/bounds', searchPayload);
+      if (requestId !== requestIdRef.current) {
+        console.warn('Stale search response ignored', requestId);
+        return;
+      }
+
       console.log('API Response:', data);
 
-      setJobs(data.jobs || []);
+      const returnedJobs = data.jobs || [];
+      setJobs(returnedJobs);
       setJobsStats({
         total: data.stats?.totalFound || 0,
-        filtered: data.stats?.returnedCount || 0,
+        filtered: data.stats?.returnedCount || returnedJobs.length,
       });
       setPreviousBounds(mapBounds);
       setBoundsDirty(false);
@@ -180,13 +204,13 @@ export const MapHomePage = () => {
 
       // ========== CLUSTERING ENGINE - P2-B ==========
       // Run clustering on fetched jobs
-      const clustering = clusteringEngineRef.current.cluster(data.jobs || [], mapZoom);
+      const clustering = clusteringEngineRef.current.cluster(returnedJobs, mapZoom);
       setClusteredResults(clustering);
       console.log('Clustering results:', clustering);
 
       // Cache results
       cacheRef.current.set(cacheKey, {
-        jobs: data.jobs || [],
+        jobs: returnedJobs,
         stats: data.stats || {},
         timestamp: Date.now(),
       });
@@ -197,35 +221,27 @@ export const MapHomePage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [mapBounds, mapZoom, mapCenter, previousBounds, hasBoundsChanged]);
+  }, [mapBounds, mapZoom, mapCenter, previousBounds, hasBoundsChanged, isLoading]);
 
   // Auto-search on first load when bounds become available
   useEffect(() => {
-    // Wait for map to initialize and bounds to be set
-    if (mapRef.current && mapBounds && !jobs.length && !isLoading) {
+    if (mapRef.current && mapBounds && !jobs.length && !isLoading && !autoSearchTriggeredRef.current) {
       console.log('✅ Auto-search conditions met:', {
         hasMapRef: !!mapRef.current,
         hasBounds: !!mapBounds,
         jobsEmpty: !jobs.length,
         notLoading: !isLoading,
       });
-      
+
+      autoSearchTriggeredRef.current = true;
       const timer = setTimeout(() => {
         console.log('🔍 Starting first load auto-search...');
-        
         handleSearchThisArea();
       }, 500);
-      
+
       return () => clearTimeout(timer);
-    } else {
-      console.log('⏭️ Auto-search conditions not met:', {
-        hasMapRef: !!mapRef.current,
-        hasBounds: !!mapBounds,
-        jobsEmpty: !jobs.length,
-        notLoading: !isLoading,
-      });
     }
-  }, [mapBounds, mapZoom, mapCenter, jobs.length, isLoading, previousBounds, handleSearchThisArea]);
+  }, [mapBounds, jobs.length, isLoading, handleSearchThisArea]);
 
   // Check onboarding status
   useEffect(() => {
@@ -243,21 +259,21 @@ export const MapHomePage = () => {
   // Handle map movement
   const handleMapMove = useCallback(() => {
     if (!mapRef.current) return;
-    
+
     const bounds = mapRef.current.getBounds();
     const zoom = mapRef.current.getZoom();
     const center = mapRef.current.getCenter();
-    
-    setMapBounds(bounds);
+
+    setMapBounds(normalizeBounds(bounds));
     setMapZoom(zoom);
     setMapCenter([center.lat, center.lng]);
     setBoundsDirty(true);
     setError(null);
-    
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-  }, []);
+  }, [normalizeBounds]);
 
   const handleMapReady = useCallback((mapInstance) => {
     if (!mapInstance) return;
@@ -267,10 +283,10 @@ export const MapHomePage = () => {
     const zoom = mapInstance.getZoom();
     const center = bounds.getCenter();
 
-    setMapBounds(bounds);
+    setMapBounds(normalizeBounds(bounds));
     setMapZoom(zoom);
     setMapCenter([center.lat, center.lng]);
-  }, []);
+  }, [normalizeBounds]);
 
   const handleMyLocation = useCallback(() => {
     if (!mapRef.current) return;
@@ -284,7 +300,7 @@ export const MapHomePage = () => {
       const bounds = mapRef.current.getBounds();
       const center = mapRef.current.getCenter();
 
-      setMapBounds(bounds);
+      setMapBounds(normalizeBounds(bounds));
       setMapZoom(12);
       setMapCenter([center.lat, center.lng]);
       setBoundsDirty(true);
@@ -293,7 +309,7 @@ export const MapHomePage = () => {
         handleSearchThisArea();
       }, 100);
     }, 600);
-  }, [userLocation, handleSearchThisArea]);
+  }, [userLocation, handleSearchThisArea, normalizeBounds]);
 
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;

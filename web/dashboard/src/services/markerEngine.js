@@ -13,46 +13,24 @@
 import L from 'leaflet';
 
 /**
- * Creates a Leaflet DivIcon for a job marker with green checkmark pin
+ * Creates a Leaflet Icon for a job marker with green checkmark pin
  * @param {number} salaryMin - Minimum salary for color coding
  * @param {boolean} isSelected - Whether this marker is currently selected
  * @returns {L.Icon} Leaflet icon
  */
 export const createJobMarkerIcon = (salaryMin, isSelected = false) => {
-  // Green checkmark pin icon (SVG)
-  const checkmarkPinSvg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" width="40" height="50">
-      <!-- Pin body -->
-      <path d="M32 2 C18 2, 8 12, 8 26 C8 42, 32 78, 32 78 C32 78, 56 42, 56 26 C56 12, 46 2, 32 2" 
-            fill="#22c55e" stroke="white" stroke-width="2"/>
-      <!-- Checkmark -->
-      <g transform="translate(32, 24)">
-        <polyline points="-8,-2 -2,4 8,-8" 
-                  stroke="white" stroke-width="3" fill="none" 
-                  stroke-linecap="round" stroke-linejoin="round"/>
-      </g>
-    </svg>
-  `;
+  // Green checkmark pin SVG (simple version)
+  const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 50"><path d="M20 2 C10 2, 3 9, 3 18 C3 30, 20 48, 20 48 C20 48, 37 30, 37 18 C37 9, 30 2, 20 2" fill="%2322c55e" stroke="white" stroke-width="1.5"/><polyline points="14,20 18,24 28,14" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  
+  const iconSize = isSelected ? [40, 50] : [32, 40];
+  const iconScale = isSelected ? 1.25 : 1;
 
-  // Highlight if selected
-  const boxShadow = isSelected
-    ? '0 4px 12px rgba(34, 197, 94, 0.6)'
-    : '0 2px 8px rgba(0, 0, 0, 0.3)';
-
-  return L.divIcon({
-    html: `
-      <div style="
-        filter: drop-shadow(${isSelected ? '0 4px 12px rgba(34, 197, 94, 0.6)' : '0 2px 8px rgba(0, 0, 0, 0.3)'});
-        transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
-        transition: transform 0.2s ease;
-      ">
-        ${checkmarkPinSvg}
-      </div>
-    `,
-    iconSize: [40, 50],
-    iconAnchor: [20, 50],
-    popupAnchor: [0, -50],
-    className: 'custom-job-marker-checkmark',
+  return L.icon({
+    iconUrl: `data:image/svg+xml;base64,${btoa(svgString)}`,
+    iconSize: iconSize,
+    iconAnchor: [iconSize[0] / 2, iconSize[1]],
+    popupAnchor: [0, -iconSize[1]],
+    className: isSelected ? 'job-marker-selected' : 'job-marker',
   });
 };
 
