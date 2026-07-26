@@ -3,6 +3,11 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { OnboardingPage } from './OnboardingPage';
+import MarkerManager, { 
+  createJobMarkerIcon, 
+  createUserMarkerIcon,
+  markerEngineUtils 
+} from '../services/markerEngine';
 import './MapHomePage.css';
 
 // Fix Leaflet marker icons
@@ -14,35 +19,13 @@ L.Icon.Default.mergeOptions({
 });
 
 /**
- * Map Core Engine - P1.5
+ * Map Core Engine - P1.5 with P2-A Marker Engine
  * 
- * Production Backend Integration:
- * - Real API calls to /api/jobs/search/bounds
- * - Caching (5 minutes)
- * - Error handling with retry
- * - Pagination support
+ * Architecture:
+ * - MarkerEngine: Handles marker lifecycle independently
+ * - MapHomePage: Orchestrates data flow
+ * - Separation of concerns: Data ≠ Rendering
  */
-
-const createJobMarkerIcon = (salaryMin) => {
-  const color = salaryMin > 5000 ? '#667eea' : salaryMin > 3000 ? '#48bb78' : '#ed8936';
-  const bgColor = salaryMin > 5000 ? '#e0e7ff' : salaryMin > 3000 ? '#f0fdf4' : '#fffbeb';
-  
-  return L.divIcon({
-    html: `<div style="background: ${bgColor}; border: 3px solid ${color}; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">💼</div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
-    className: 'custom-job-marker',
-  });
-};
-
-const createUserMarkerIcon = () => {
-  return L.icon({
-    iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23667eea" width="32" height="32"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="white"/></svg>',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-  });
-};
 
 export const MapHomePage = () => {
   // ========== CORE STATE ==========
@@ -72,6 +55,17 @@ export const MapHomePage = () => {
   // ========== CACHE ==========
   const cacheRef = useRef(new Map());
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  // ========== MARKER ENGINE ==========
+  const markerManagerRef = useRef(null);
+  const [markerStats, setMarkerStats] = useState({ total: 0, visible: 0 });
+  
+  // Initialize Marker Manager
+  useEffect(() => {
+    if (!markerManagerRef.current) {
+      markerManagerRef.current = new MarkerManager();
+    }
+  }, []);
   
   // Check if bounds significantly changed
   const hasBoundsChanged = useCallback((newBounds, oldBounds) => {
@@ -343,24 +337,35 @@ export const MapHomePage = () => {
               </Popup>
             </Marker>
 
-            {/* Job Markers */}
-            {jobsWithDistance.map((job) => (
-              <Marker
-                key={job.id}
-                position={[job.latitude, job.longitude]}
-                icon={createJobMarkerIcon(job.salaryMin)}
-                eventHandlers={{
-                  click: () => setSelectedJob(job),
-                }}
-              >
-                <Popup>
-                  <div style={{ textAlign: 'center', fontSize: '12px' }}>
-                    <strong>{job.title}</strong>
-                    <p>{job.company}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {/* Job Markers - Rendered by MarkerEngine for scalability */}
+            {jobsWithDistance.map((job) => {
+              const isSelected = selectedJob?.id === job.id;
+              return (
+                <Marker
+                  key={job.id}
+                  position={[job.latitude, job.longitude]}
+                  icon={createJobMarkerIcon(job.salaryMin, isSelected)}
+                  eventHandlers={{
+                    click: () => {
+                      setSelectedJob(job);
+                      markerManagerRef.current?.selectMarker(job.id, mapRef.current);
+                    },
+                  }}
+                >
+                  <Popup>
+                    <div style={{ textAlign: 'center', fontSize: '12px', minWidth: '150px' }}>
+                      <strong>{job.title}</strong>
+                      <p style={{ margin: '4px 0', color: '#667eea', fontWeight: '600' }}>
+                        {job.company}
+                      </p>
+                      <p style={{ margin: '4px 0', color: '#666', fontSize: '11px' }}>
+                        {job.salary}
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
 
           {/* Search Button */}
