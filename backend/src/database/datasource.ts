@@ -1,19 +1,27 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
+import path from 'path';
 
 config();
 
-// Import entities directly to ensure TypeORM can find them
-import { User } from '../modules/users/entities/user.entity';
-import { Company } from '../modules/companies/entities/company.entity';
-import { Job } from '../modules/jobs/entities/job.entity';
-import { SavedSearch } from '../modules/saved-searches/entities/saved-search.entity';
-import { Application } from '../modules/applications/entities/application.entity';
-import { Notification } from '../modules/notifications/entities/notification.entity';
+// Determine environment and adjust paths accordingly
+const isProduction = process.env.NODE_ENV === 'production';
+const isDist = process.cwd().includes('dist') || process.argv[1]?.includes('dist');
 
-// Import migrations
-import { CreateUsersTable1721903400000 } from './migrations/1721903400000-CreateUsersTable';
-import { CreateSavedSearchesTable1726000001000 } from './migrations/1726000001000-CreateSavedSearchesTable';
+// Use absolute paths that work with ts-node and compiled code
+let entitiesPath: any;
+let migrationsPath: any;
+
+if (isDist || isProduction) {
+  // Compiled mode - dist folder
+  entitiesPath = path.join(__dirname, '../modules/**/entities/**/*.entity.js');
+  migrationsPath = path.join(__dirname, './**/*.js');
+} else {
+  // ts-node mode - use glob with src
+  const basePath = path.resolve(__dirname, '..');
+  entitiesPath = path.join(basePath, 'modules/**/entities/**/*.entity.ts');
+  migrationsPath = path.join(__dirname, '*.ts');
+}
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -22,11 +30,8 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'jobmap',
-  entities: [User, Company, Job, SavedSearch, Application, Notification],
-  migrations: [
-    CreateUsersTable1721903400000,
-    CreateSavedSearchesTable1726000001000,
-  ],
+  entities: [entitiesPath],
+  migrations: [migrationsPath],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
   migrationsRun: false,
