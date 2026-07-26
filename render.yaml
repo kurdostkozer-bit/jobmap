@@ -17,6 +17,13 @@ services:
     routes:
       - path: /*
         destination: /index.html
+    headers:
+      - path: /
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+      - path: /static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
 
 databases:
   - name: jobmap-db
