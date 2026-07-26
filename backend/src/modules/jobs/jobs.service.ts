@@ -178,9 +178,13 @@ export class JobsService {
 
     const { north, south, east, west } = bounds;
 
+    console.log('🔍 Search bounds request:', { north, south, east, west, filters, sortBy });
+
     // Validate bounds
     if (north <= south || east <= west) {
-      throw new BadRequestException('Invalid bounds');
+      const errorMsg = `Invalid bounds: north(${north}) must be > south(${south}), east(${east}) must be > west(${west})`;
+      console.error('❌ ' + errorMsg);
+      throw new BadRequestException(errorMsg);
     }
 
     // Build optimized query (no joins, selected fields only)

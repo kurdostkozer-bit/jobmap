@@ -33,7 +33,12 @@ export class JobsController {
   // Static routes BEFORE :id parameter
   @Post('search/bounds')
   async searchByBounds(@Body() boundsQuery: SearchBoundsDto): Promise<any> {
-    return await this.jobsService.searchByBounds(boundsQuery);
+    try {
+      return await this.jobsService.searchByBounds(boundsQuery);
+    } catch (error) {
+      console.error('Error in searchByBounds:', error);
+      throw error;
+    }
   }
 
   @Get('search')
