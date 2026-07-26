@@ -1,8 +1,49 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import './MapHomePage.css';
 
+// Fix Leaflet marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+// Custom job marker icon factory
+const createJobIcon = (salaryMin) => {
+  const color = salaryMin > 5000 ? '#667eea' : salaryMin > 3000 ? '#48bb78' : '#ed8936';
+  const bgColor = salaryMin > 5000 ? '#e0e7ff' : salaryMin > 3000 ? '#f0fdf4' : '#fffbeb';
+  
+  return L.divIcon({
+    html: `
+      <div style="
+        background: ${bgColor};
+        border: 3px solid ${color};
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      ">
+        💼
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+    className: 'custom-job-marker',
+  });
+};
+
 export const MapHomePage = () => {
-  const mapRef = useRef(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,61 +138,16 @@ export const MapHomePage = () => {
     },
   ], []);
 
-  // Initialize Google Map
+  // Initialize map
   useEffect(() => {
     setIsLoading(true);
-    
-    // Simulate loading and then initialize map
     setTimeout(() => {
-      if (mapRef.current) {
-        // Create a simple map without Google Maps (fallback to Leaflet visual style)
-        initializeSimpleMap();
-      }
       setFilteredJobs(allJobs);
       setIsLoading(false);
-    }, 500);
+    }, 300);
   }, [allJobs]);
 
-  const initializeSimpleMap = () => {
-    // Create map with Google Maps API
-    if (mapRef.current && window.google) {
-      const iraqCenter = { lat: 33.1, lng: 44.0 };
-      
-      const map = new window.google.maps.Map(mapRef.current, {
-        zoom: 7,
-        center: iraqCenter,
-        mapTypeId: 'roadmap',
-        styles: [
-          {
-            featureType: 'all',
-            elementType: 'labels',
-            stylers: [{ color: '#667eea' }],
-          },
-        ],
-      });
-
-      // Add job markers
-      allJobs.forEach((job) => {
-        const marker = new window.google.maps.Marker({
-          position: { lat: job.lat, lng: job.lng },
-          map: map,
-          title: job.title,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: job.salaryMin > 5000 ? '#667eea' : job.salaryMin > 3000 ? '#48bb78' : '#ed8936',
-            fillOpacity: 0.8,
-            strokeColor: '#fff',
-            strokeWeight: 2,
-          },
-        });
-
-        marker.addListener('click', () => setSelectedJob(job));
-      });
-    }
-  };
-
-  // Filter jobs
+  // Filter jobs based on search and location
   useEffect(() => {
     let result = allJobs;
 
@@ -167,7 +163,7 @@ export const MapHomePage = () => {
     }
 
     setFilteredJobs(result);
-  }, [searchTerm, selectedLocation]);
+  }, [searchTerm, selectedLocation, allJobs]);
 
   const locations = [...new Set(allJobs.map(job => job.location))];
 
@@ -218,8 +214,53 @@ export const MapHomePage = () => {
       {/* Main Container */}
       <div className="map-container-main">
         {/* Map Section */}
-        <div className="map-section" ref={mapRef}>
-          {isLoading && <div className="map-loading">جاري تحميل الخريطة...</div>}
+        <div className="map-section">
+          {isLoading ? (
+            <div className="map-loading">جاري تحميل الخريطة...</div>
+          ) : (
+            <MapContainer 
+              center={[33.1, 44.0]} 
+              zoom={7} 
+              style={{ width: '100%', height: '100%' }}
+              className="leaflet-map"
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              {filteredJobs.map((job) => (
+                <Marker 
+                  key={job.id} 
+                  position={[job.lat, job.lng]}
+                  icon={createJobIcon(job.salaryMin)}
+                  eventHandlers={{
+                    click: () => setSelectedJob(job),
+                  }}
+                >
+                  <Popup>
+                    <div style={{ textAlign: 'center' }}>
+                      <strong>{job.title}</strong>
+                      <p>{job.company}</p>
+                      <p>💰 {job.salary}</p>
+                      <button 
+                        onClick={() => setSelectedJob(job)}
+                        style={{
+                          padding: '8px 12px',
+                          background: '#667eea',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        عرض التفاصيل
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          )}
         </div>
 
         {/* Sidebar - Jobs List */}
