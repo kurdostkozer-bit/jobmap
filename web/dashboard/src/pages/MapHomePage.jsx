@@ -5,9 +5,9 @@ import 'leaflet/dist/leaflet.css';
 import { OnboardingPage } from './OnboardingPage';
 import MarkerManager, { 
   createJobMarkerIcon, 
-  createUserMarkerIcon,
-  markerEngineUtils 
+  createUserMarkerIcon
 } from '../services/markerEngine';
+import { ClusteringEngine, clusteringUtils } from '../services/clusteringEngine';
 import './MapHomePage.css';
 
 // Fix Leaflet marker icons
@@ -54,16 +54,22 @@ export const MapHomePage = () => {
   
   // ========== CACHE ==========
   const cacheRef = useRef(new Map());
-  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
   
   // ========== MARKER ENGINE ==========
   const markerManagerRef = useRef(null);
-  const [markerStats, setMarkerStats] = useState({ total: 0, visible: 0 });
   
-  // Initialize Marker Manager
+  // ========== CLUSTERING ENGINE ==========
+  const clusteringEngineRef = useRef(null);
+  const [clusteredResults, setClusteredResults] = useState({ clusters: [], unclustered: [], stats: {} });
+  
+  // Initialize Engines
   useEffect(() => {
     if (!markerManagerRef.current) {
       markerManagerRef.current = new MarkerManager();
+    }
+    if (!clusteringEngineRef.current) {
+      clusteringEngineRef.current = new ClusteringEngine();
     }
   }, []);
   
@@ -128,7 +134,7 @@ export const MapHomePage = () => {
     
     // Check cache
     const cached = cacheRef.current.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION_MS) {
       console.log('Using cached results');
       setJobs(cached.jobs);
       setJobsStats(cached.stats);
@@ -185,6 +191,12 @@ export const MapHomePage = () => {
         setError(null);
         setRetryCount(0);
         
+        // ========== CLUSTERING ENGINE - P2-B ==========
+        // Run clustering on fetched jobs
+        const clustering = clusteringEngineRef.current.cluster(data.jobs || [], mapZoom);
+        setClusteredResults(clustering);
+        console.log('Clustering results:', clustering);
+        
         // Cache results
         cacheRef.current.set(cacheKey, {
           jobs: data.jobs || [],
@@ -200,6 +212,7 @@ export const MapHomePage = () => {
       .finally(() => {
         setIsLoading(false);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, mapZoom, mapCenter, previousBounds, hasBoundsChanged]);
 
   // My Location
@@ -337,8 +350,67 @@ export const MapHomePage = () => {
               </Popup>
             </Marker>
 
-            {/* Job Markers - Rendered by MarkerEngine for scalability */}
-            {jobsWithDistance.map((job) => {
+            {/* Job Markers & Clusters - P2-A + P2-B */}
+            
+            {/* Render Clusters */}
+            {clusteredResults.clusters && clusteredResults.clusters.map((cluster) => {
+              const isSelected = selectedJob?.id === cluster.id;
+              return (
+                <Marker
+                  key={`cluster-${cluster.id}`}
+                  position={[cluster.latitude, cluster.longitude]}
+                  icon={L.divIcon(clusteringUtils.createClusterIcon(cluster, isSelected))}
+                  eventHandlers={{
+                    click: () => {
+                      // Zoom to cluster
+                      clusteringUtils.zoomToCluster(mapRef.current, cluster);
+                      setSelectedJob(null);
+                    },
+                  }}
+                >
+                  <Popup>
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: clusteringUtils.createClusterPopupContent(cluster) 
+                    }} />
+                  </Popup>
+                </Marker>
+              );
+            })}
+            
+            {/* Render Unclustered Jobs */}
+            {clusteredResults.unclustered && clusteredResults.unclustered.map((job) => {
+              const isSelected = selectedJob?.id === job.id;
+              return (
+                <Marker
+                  key={`job-${job.id}`}
+                  position={[job.latitude, job.longitude]}
+                  icon={createJobMarkerIcon(job.salaryMin, isSelected)}
+                  eventHandlers={{
+                    click: () => {
+                      setSelectedJob(job);
+                      markerManagerRef.current?.selectMarker(job.id, mapRef.current);
+                    },
+                  }}
+                >
+                  <Popup>
+                    <div style={{ textAlign: 'center', fontSize: '12px', minWidth: '150px' }}>
+                      <strong>{job.title}</strong>
+                      <p style={{ margin: '4px 0', color: '#667eea', fontWeight: '600' }}>
+                        {job.company}
+                      </p>
+                      <p style={{ margin: '4px 0', color: '#666', fontSize: '11px' }}>
+                        {job.salary}
+                      </p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
+            
+            {/* Fallback: Render all jobs if no clustering */}
+            {(!clusteredResults.clusters || clusteredResults.clusters.length === 0) && 
+             (!clusteredResults.unclustered || clusteredResults.unclustered.length === 0) &&
+             jobsWithDistance.map((job) => {
               const isSelected = selectedJob?.id === job.id;
               return (
                 <Marker

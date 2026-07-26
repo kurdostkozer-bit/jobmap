@@ -390,3 +390,150 @@ When making architectural decisions, prioritize:
 - **Rejected:** API spam, poor UX
 - **Alternative:** Debounced search button (chosen)
 
+
+
+---
+
+## ADR-012: Independent Spatial Clustering Engine
+
+**Status:** Accepted  
+**Date:** 2026-07-26  
+**Context:** P2-B introduced clustering. Need to keep it independent from MarkerManager.
+
+### Decision
+
+Create **ClusteringEngine** as a standalone service layer:
+
+```
+API (jobs)
+  ↓
+MarkerManager (marker lifecycle, icons)
+  ↓
+ClusteringEngine (spatial grouping)
+  ↓
+Leaflet (rendering)
+```
+
+**Not:** Clustering logic inside MarkerManager or MapHomePage.
+
+### Rationale
+
+| Aspect | Decision | Why |
+|--------|----------|-----|
+| **Ownership** | ClusteringEngine | Can swap algorithms later (K-means, QuadTree, etc.) |
+| **Reusability** | Independent service | Other pages (Heat Map, Analytics) use same engine |
+| **Testability** | Pure function: `cluster(jobs, zoom)` | No DOM/React dependencies |
+| **Scalability** | Grid hashing, O(n) | Scales to 10,000+ jobs |
+| **Cluster ID** | Stable grid ID: `zoom-cellX-cellY` | Same location = same cluster across renders |
+
+### Algorithm: Zoom-Aware Grid Hashing
+
+1. **Input:** Jobs + zoom level
+2. **Convert** lat/lng → pixel coordinates (Web Mercator)
+3. **Hash** each job to grid cell: `zoom-cellX-cellY`
+4. **Group** jobs by cell
+5. **Output:** Clusters (2+ jobs) + Unclustered (1 job)
+
+**No hardcoded thresholds** (e.g., "if >20 markers"). Clustering naturally emerges from pixel radius × zoom.
+
+### Cluster Statistics
+
+Each cluster provides metadata for future features:
+
+```javascript
+{
+  id: "13-42-85",
+  latitude, longitude,     // Center (centroid)
+  count,                   // Number of jobs
+  averageSalaryMin,        // For Heat Map (P6)
+  averageSalaryMax,
+  categories,              // For category filters (P3)
+  bounds,                  // For zoom-to-cluster
+  jobIds,                  // For expansion
+  zoomRecommendation      // Suggests zoom to auto-expand
+}
+```
+
+### Cluster Behavior
+
+| Action | Behavior |
+|--------|----------|
+| **Click cluster** | Zoom map to bounds |
+| **Bounds fit cluster** | Cluster auto-expands to job markers |
+| **Zoom to 16+** | No clustering; all jobs visible |
+
+### Consequences
+
+**Positive:**
+- ✅ Independent, testable, reusable
+- ✅ Scales naturally (no magic numbers)
+- ✅ Stable cluster IDs (prevent re-renders)
+- ✅ Rich statistics (foundation for P3-P8)
+- ✅ Can replace algorithm without refactor
+
+**Negative:**
+- ⚠️ One more service to maintain
+- ⚠️ Must sync API response → clustering → rendering
+
+**Mitigations:**
+- Clustering happens synchronously (no race conditions)
+- Comprehensive documentation (P2-B_SPATIAL_CLUSTERING_ENGINE.md)
+- Unit tests validate zoom-awareness
+
+### Performance Targets
+
+| Jobs | Zoom Level | Expected Behavior |
+|------|-----------|-------------------|
+| 100 | 7 | ~5 clusters; 60 FPS |
+| 1,000 | 7 | ~50 clusters; 50+ FPS |
+| 10,000 | 7 | ~200 clusters; 30+ FPS (acceptable) |
+
+**Optimization Path:**
+- P2-B: Grid hashing (O(n))
+- P4+: QuadTree or R-tree for 100,000+ jobs
+- Virtualization: Render only visible clusters + markers
+
+### Future Extensions
+
+- **Heat Map (P6):** Color intensity by `averageSalaryMax` per cluster
+- **Category Bubbles (P3):** Filter clusters by category
+- **Analytics:** Track cluster clicks, zoom patterns
+- **Recommendations:** Suggest high-demand areas
+
+---
+
+## ADR-013: Markers Are Independent of Clusters
+
+**Status:** Accepted  
+**Date:** 2026-07-26  
+**Context:** Unclustered jobs should use same marker logic as before.
+
+### Decision
+
+Clustering **does not change** marker rendering:
+
+- Unclustered jobs use `createJobMarkerIcon()` (P2-A)
+- Cluster markers use `createClusterIcon()` (P2-B utils)
+- Both render via Leaflet `Marker` component
+
+### Consequence
+
+MarkerManager can evolve independently:
+- Add hover effects → automatically applied to unclustered jobs
+- Add salary filtering → filters jobs before clustering
+- Add virtualization → wraps both cluster + unclustered rendering
+
+---
+
+## Summary of Decisions by Phase
+
+| Phase | Key Decisions |
+|-------|---------------|
+| **P1** | Map-First, Bounds-based, Debounced search |
+| **P1.5** | Real Backend API, Caching, Error handling |
+| **P2-A** | MarkerManager (independent service) |
+| **P2-B** | ClusteringEngine (independent service, zoom-aware, stable IDs) |
+| **P3** | Filters + clustering integration |
+| **P4+** | Saved jobs, real-time updates, heat map, recommendations |
+
+**Core Principle:** Each phase adds a **layer**, not a modification. Preserves clean separation of concerns.
