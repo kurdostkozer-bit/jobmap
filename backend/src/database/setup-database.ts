@@ -35,27 +35,50 @@ async function setupDatabase() {
 
     await queryRunner.release();
 
-    // Step 2: Create demo companies
+    // Step 2: Create or get demo user as company owner
+    console.log('👤 Setting up demo user...');
+    const userRepository = setupDataSource.getRepository(User);
+    
+    let demoUser = await userRepository.findOne({ where: { email: 'demo@jobmap.com' } });
+    if (!demoUser) {
+      demoUser = userRepository.create({
+        email: 'demo@jobmap.com',
+        passwordHash: 'hashed_password', // Just a placeholder
+        firstName: 'Demo',
+        lastName: 'Company',
+        role: 'employer' as const,
+        isActive: true,
+      });
+      demoUser = await userRepository.save(demoUser);
+      console.log(`✓ Created demo user: ${demoUser.email}`);
+    } else {
+      console.log(`⊙ Demo user exists: ${demoUser.email}`);
+    }
+
+    // Step 3: Create demo companies
     console.log('🏢 Creating demo companies...');
     const companyRepository = setupDataSource.getRepository(Company);
     
     const demoCompanies = [
-      { name: 'TechCorp Iraq', description: 'Leading tech company in Iraq' },
-      { name: 'Digital Solutions Ltd', description: 'Premium digital services' },
-      { name: 'Design Studio Pro', description: 'Creative design agency' },
-      { name: 'Database Services', description: 'Database and infrastructure' },
-      { name: 'Cloud Innovations', description: 'Cloud computing solutions' },
-      { name: 'QA Excellence', description: 'Quality assurance services' },
-      { name: 'Enterprise Architects', description: 'Enterprise solutions' },
-      { name: 'Creative Arts', description: 'Graphics and design' },
-      { name: 'Business Growth', description: 'Sales and business development' },
+      { name: 'TechCorp Iraq', email: 'tech@techcorp.iq', governorate: 'Baghdad', description: 'Leading tech company in Iraq' },
+      { name: 'Digital Solutions Ltd', email: 'info@digitalsolutions.iq', governorate: 'Baghdad', description: 'Premium digital services' },
+      { name: 'Design Studio Pro', email: 'hello@designstudio.iq', governorate: 'Baghdad', description: 'Creative design agency' },
+      { name: 'Database Services', email: 'db@dbservices.iq', governorate: 'Basra', description: 'Database and infrastructure' },
+      { name: 'Cloud Innovations', email: 'cloud@innovations.iq', governorate: 'Basra', description: 'Cloud computing solutions' },
+      { name: 'QA Excellence', email: 'qa@excellence.iq', governorate: 'Erbil', description: 'Quality assurance services' },
+      { name: 'Enterprise Architects', email: 'enterprise@architects.iq', governorate: 'Erbil', description: 'Enterprise solutions' },
+      { name: 'Creative Arts', email: 'creative@arts.iq', governorate: 'Nineveh', description: 'Graphics and design' },
+      { name: 'Business Growth', email: 'sales@businessgrowth.iq', governorate: 'Nineveh', description: 'Sales and business development' },
     ];
 
     const companies = [];
     for (const companyData of demoCompanies) {
       let company = await companyRepository.findOne({ where: { name: companyData.name } });
       if (!company) {
-        company = companyRepository.create(companyData);
+        company = companyRepository.create({
+          ...companyData,
+          ownerId: demoUser.id,
+        });
         company = await companyRepository.save(company);
         console.log(`✓ Created company: ${companyData.name}`);
       } else {
@@ -64,7 +87,7 @@ async function setupDatabase() {
       companies.push(company);
     }
 
-    // Step 3: Seed jobs data with real company IDs
+    // Step 4: Seed jobs data with real company IDs
     console.log('🌱 Seeding P3 discovery jobs...');
     
     const jobsRepository = setupDataSource.getRepository(Job);
