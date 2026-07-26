@@ -187,8 +187,9 @@ export class JobsService {
       throw new BadRequestException(errorMsg);
     }
 
-    // Build optimized query (no joins, selected fields only)
+    // Build optimized query with company join
     let query = this.jobsRepository.createQueryBuilder('job')
+      .leftJoinAndSelect('job.company', 'company')
       .select([
         'job.id',
         'job.anonymizedLatitude',
@@ -202,6 +203,8 @@ export class JobsService {
         'job.createdAt',
         'job.description',
         'job.experienceLevel',
+        'company.name',
+        'company.id',
       ])
       .where('job.isActive = true')
       .andWhere('job.anonymizedLatitude BETWEEN :south AND :north', { south, north })
@@ -298,20 +301,21 @@ export class JobsService {
 
     // Transform jobs to match frontend API spec
     const transformedJobs = jobs.map(job => ({
-      id: job.job_id,
-      latitude: parseFloat(job.job_anonymizedLatitude),
-      longitude: parseFloat(job.job_anonymizedLongitude),
-      title: job.job_title,
-      salary: `${job.job_salaryMin || 'N/A'}-${job.job_salaryMax || 'N/A'}`,
-      salaryMin: job.job_salaryMin ? parseFloat(job.job_salaryMin) : null,
-      salaryMax: job.job_salaryMax ? parseFloat(job.job_salaryMax) : null,
-      employmentType: job.job_jobType || 'Full-Time',
-      category: job.job_category || 'Other',
-      experienceLevel: job.job_experienceLevel || 'Entry',
+      id: job.id,
+      latitude: parseFloat(job.anonymizedLatitude),
+      longitude: parseFloat(job.anonymizedLongitude),
+      title: job.title,
+      company: job.company?.name || 'Unknown Company',
+      salary: `${job.salaryMin || 'N/A'}-${job.salaryMax || 'N/A'}`,
+      salaryMin: job.salaryMin ? parseFloat(job.salaryMin) : null,
+      salaryMax: job.salaryMax ? parseFloat(job.salaryMax) : null,
+      employmentType: job.jobType || 'Full-Time',
+      category: job.category || 'Other',
+      experienceLevel: job.experienceLevel || 'Entry',
       status: 'active',
-      createdAt: job.job_createdAt?.toISOString?.() || new Date().toISOString(),
-      description: job.job_description,
-      applicants: job.job_applicantsCount || 0,
+      createdAt: job.createdAt?.toISOString?.() || new Date().toISOString(),
+      description: job.description,
+      applicants: job.applicantsCount || 0,
     }));
 
     return {
