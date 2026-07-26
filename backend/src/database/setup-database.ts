@@ -1,14 +1,20 @@
-import { AppDataSource } from './datasource';
+import { setupDataSource } from './datasource';
 import { Job } from '../modules/jobs/entities/job.entity';
+import { User } from '../modules/users/entities/user.entity';
+import { Company } from '../modules/companies/entities/company.entity';
+import { SavedSearch } from '../modules/saved-searches/entities/saved-search.entity';
+import { Application } from '../modules/applications/entities/application.entity';
+import { Notification } from '../modules/notifications/entities/notification.entity';
 
 async function setupDatabase() {
   try {
     console.log('🔄 Initializing database connection...');
-    if (!AppDataSource.isInitialized) {
-      await AppDataSource.initialize();
+    
+    if (!setupDataSource.isInitialized) {
+      await setupDataSource.initialize();
     }
 
-    const queryRunner = AppDataSource.createQueryRunner();
+    const queryRunner = setupDataSource.createQueryRunner();
     await queryRunner.connect();
 
     // Step 1: Register migration
@@ -32,7 +38,7 @@ async function setupDatabase() {
     // Step 2: Seed jobs data
     console.log('🌱 Seeding P3 discovery jobs...');
     
-    const jobsRepository = AppDataSource.getRepository(Job);
+    const jobsRepository = setupDataSource.getRepository(Job);
     
     const testJobs = [
       {
@@ -281,7 +287,7 @@ async function setupDatabase() {
     console.log(`📊 Created: ${createdCount} new jobs`);
     console.log(`📈 Total jobs in database: ${totalJobs}`);
 
-    await AppDataSource.destroy();
+    await setupDataSource.destroy();
   } catch (error) {
     console.error('❌ Setup failed:', error);
     process.exit(1);

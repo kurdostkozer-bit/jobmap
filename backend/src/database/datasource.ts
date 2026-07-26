@@ -1,28 +1,30 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
-import path from 'path';
+import { User } from '../modules/users/entities/user.entity';
+import { Company } from '../modules/companies/entities/company.entity';
+import { Job } from '../modules/jobs/entities/job.entity';
+import { SavedSearch } from '../modules/saved-searches/entities/saved-search.entity';
+import { Application } from '../modules/applications/entities/application.entity';
+import { Notification } from '../modules/notifications/entities/notification.entity';
 
 config();
 
-// Determine environment and adjust paths accordingly
-const isProduction = process.env.NODE_ENV === 'production';
-const isDist = process.cwd().includes('dist') || process.argv[1]?.includes('dist');
+// Create a dedicated DataSource for setup scripts
+export const setupDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'jobmap',
+  entities: [User, Company, Job, SavedSearch, Application, Notification],
+  migrations: ['src/database/migrations/**/*.ts', 'dist/database/migrations/**/*.js'],
+  synchronize: false,
+  logging: process.env.NODE_ENV === 'development',
+  migrationsRun: false,
+});
 
-// Use absolute paths that work with ts-node and compiled code
-let entitiesPath: any;
-let migrationsPath: any;
-
-if (isDist || isProduction) {
-  // Compiled mode - dist folder
-  entitiesPath = path.join(__dirname, '../modules/**/entities/**/*.entity.js');
-  migrationsPath = path.join(__dirname, './**/*.js');
-} else {
-  // ts-node mode - use glob with src
-  const basePath = path.resolve(__dirname, '..');
-  entitiesPath = path.join(basePath, 'modules/**/entities/**/*.entity.ts');
-  migrationsPath = path.join(__dirname, '*.ts');
-}
-
+// Main AppDataSource for NestJS (uses glob patterns or compiled files)
 export const AppDataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
@@ -30,8 +32,8 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'jobmap',
-  entities: [entitiesPath],
-  migrations: [migrationsPath],
+  entities: ['src/modules/**/entities/**/*.entity.ts', 'dist/modules/**/entities/**/*.entity.js'],
+  migrations: ['src/database/migrations/**/*.ts', 'dist/database/migrations/**/*.js'],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
   migrationsRun: false,
