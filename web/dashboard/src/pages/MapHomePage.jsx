@@ -76,19 +76,35 @@ export const MapHomePage = () => {
   
   // ========== MAP STATE ==========
   const [mapBounds, setMapBounds] = useState(null);
+  const [previousBounds, setPreviousBounds] = useState(null); // Track previous bounds to avoid duplicate requests
   const [mapZoom, setMapZoom] = useState(7);
+  const [mapCenter, setMapCenter] = useState([33.3136, 44.3615]);
   const [boundsDirty, setBoundsDirty] = useState(false); // User moved map
   const mapRef = useRef(null);
   const debounceTimerRef = useRef(null);
   
   // ========== JOB DATA STATE ==========
   const [jobs, setJobs] = useState([]); // Jobs from API within bounds
+  const [jobsStats, setJobsStats] = useState({ total: 0, filtered: 0 }); // Stats from current bounds
   const [selectedJob, setSelectedJob] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   // ========== SEARCH STATE ==========
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // ========== HELPER: Check if bounds significantly changed ==========
+  const hasBoundsChanged = useCallback((newBounds, oldBounds) => {
+    if (!oldBounds) return true;
+    
+    const threshold = 0.01; // Roughly 1km at equator
+    const { _northEast: ne, _southWest: sw } = newBounds;
+    const { _northEast: oldNe, _southWest: oldSw } = oldBounds;
+    
+    return Math.abs(ne.lat - oldNe.lat) > threshold ||
+           Math.abs(ne.lng - oldNe.lng) > threshold ||
+           Math.abs(sw.lat - oldSw.lat) > threshold ||
+           Math.abs(sw.lng - oldSw.lng) > threshold;
+  }, []);
 
   // ========== LIFECYCLE ==========
   
@@ -111,16 +127,19 @@ export const MapHomePage = () => {
     
     const bounds = mapRef.current.getBounds();
     const zoom = mapRef.current.getZoom();
+    const center = mapRef.current.getCenter();
     
     setMapBounds(bounds);
     setMapZoom(zoom);
+    setMapCenter([center.lat, center.lng]);
     setBoundsDirty(true);
     
+    // Debounce: show button only after user stops moving
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
-      // Visual debounce complete
+      // Debounce complete - button stays visible
     }, 400);
   }, []);
 
@@ -128,21 +147,44 @@ export const MapHomePage = () => {
   const handleSearchThisArea = useCallback(() => {
     if (!mapBounds) return;
     
+    // Check if bounds actually changed (prevent duplicate requests)
+    if (!hasBoundsChanged(mapBounds, previousBounds)) {
+      console.log('Bounds unchanged, skipping search');
+      setBoundsDirty(false);
+      return;
+    }
+    
     const { _southWest, _northEast } = mapBounds;
     
-    const searchParams = {
-      north: _northEast.lat,
-      south: _southWest.lat,
-      east: _northEast.lng,
-      west: _southWest.lng,
+    // New API structure: bounds as object
+    const searchPayload = {
+      bounds: {
+        north: _northEast.lat,
+        south: _southWest.lat,
+        east: _northEast.lng,
+        west: _southWest.lng,
+      },
+      zoom: mapZoom,
+      center: {
+        lat: mapCenter[0],
+        lng: mapCenter[1],
+      },
+      // Ready for future filters
+      filters: {
+        // employmentType: [],
+        // category: [],
+        // salaryMin: null,
+        // salaryMax: null,
+      },
     };
     
-    console.log('Searching bounds:', searchParams);
+    console.log('Searching bounds:', searchPayload);
     
-    setIsSearching(true);
     setIsLoading(true);
     
+    // Simulate API call
     setTimeout(() => {
+      // Mock jobs with expanded data model
       const jobsInBounds = [
         {
           id: 1,
@@ -151,9 +193,16 @@ export const MapHomePage = () => {
           company: 'Tech Solutions',
           title: 'Senior Developer',
           salary: '6000-8000',
-          type: 'full-time',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
           salaryMin: 6000,
+          salaryMax: 8000,
+          employmentType: 'full-time',
+          category: 'IT',
+          status: 'active',
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - 3600000).toISOString(),
+          description: 'نبحث عن مطور React خبير',
+          skills: ['React', 'Node.js', 'TypeScript'],
+          applicants: 12,
         },
         {
           id: 2,
@@ -162,9 +211,16 @@ export const MapHomePage = () => {
           company: 'Design Studio',
           title: 'UI/UX Designer',
           salary: '3500-4500',
-          type: 'full-time',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
           salaryMin: 3500,
+          salaryMax: 4500,
+          employmentType: 'full-time',
+          category: 'Design',
+          status: 'active',
+          createdAt: new Date(Date.now() - 172800000).toISOString(),
+          updatedAt: new Date(Date.now() - 86400000).toISOString(),
+          description: 'مصمم واجهات ذو خبرة في Figma',
+          skills: ['Figma', 'UI Design', 'Prototyping'],
+          applicants: 8,
         },
         {
           id: 6,
@@ -173,26 +229,53 @@ export const MapHomePage = () => {
           company: 'Cloud Systems',
           title: 'DevOps Engineer',
           salary: '5500-7000',
-          type: 'full-time',
-          createdAt: new Date(Date.now() - 259200000).toISOString(),
           salaryMin: 5500,
+          salaryMax: 7000,
+          employmentType: 'full-time',
+          category: 'IT',
+          status: 'active',
+          createdAt: new Date(Date.now() - 259200000).toISOString(),
+          updatedAt: new Date(Date.now() - 259200000).toISOString(),
+          description: 'مهندس DevOps لإدارة البنية التحتية السحابية',
+          skills: ['Docker', 'Kubernetes', 'AWS'],
+          applicants: 7,
         },
       ];
       
       setJobs(jobsInBounds);
+      setPreviousBounds(mapBounds); // Save bounds to prevent duplicate requests
       setBoundsDirty(false);
       setIsLoading(false);
+      setJobsStats({
+        total: jobsInBounds.length,
+        filtered: jobsInBounds.length,
+      });
       
       console.log('Jobs found:', jobsInBounds.length);
     }, 600);
-  }, [mapBounds]);
+  }, [mapBounds, mapZoom, mapCenter, previousBounds, hasBoundsChanged]);
 
-  // Return to user location
+  // Return to user location and search
   const handleMyLocation = useCallback(() => {
     if (mapRef.current) {
       mapRef.current.flyTo([userLocation.lat, userLocation.lng], 12, {
         duration: 0.5,
       });
+      
+      // Wait for animation to complete, then search
+      setTimeout(() => {
+        const bounds = mapRef.current.getBounds();
+        setMapBounds(bounds);
+        setMapZoom(12);
+        const center = mapRef.current.getCenter();
+        setMapCenter([center.lat, center.lng]);
+        setBoundsDirty(true);
+        
+        // Execute search after animation
+        setTimeout(() => {
+          setBoundsDirty(false); // Will trigger handleSearchThisArea
+        }, 100);
+      }, 600);
     }
   }, [userLocation]);
 
@@ -256,7 +339,7 @@ export const MapHomePage = () => {
 
         <div className="header-center">
           <div className="job-count-badge">
-            💼 {jobsWithDistance.length} وظيفة
+            💼 {jobsStats.filtered} وظيفة
           </div>
         </div>
 
@@ -378,11 +461,12 @@ export const MapHomePage = () => {
                   <div className="job-header">
                     <h4>{job.title}</h4>
                     <span className="job-type">
-                      {job.type === 'full-time' ? 'دوام كامل' : 'جزئي'}
+                      {job.employmentType === 'full-time' ? 'دوام كامل' : 'جزئي'}
                     </span>
                   </div>
 
                   <p className="job-company">{job.company}</p>
+                  <p className="job-category">📂 {job.category}</p>
                   
                   <div className="job-meta">
                     <span className="salary">💰 {job.salary}</span>
@@ -397,18 +481,42 @@ export const MapHomePage = () => {
         </aside>
       </div>
 
-      {/* Job Details Bubble (small popup) */}
+      {/* Job Bubble */}
       {selectedJob && (
         <div className="job-bubble">
           <button className="bubble-close" onClick={() => setSelectedJob(null)}>✕</button>
           <div className="bubble-content">
-            <h3>{selectedJob.title}</h3>
-            <p className="bubble-company">{selectedJob.company}</p>
-            <div className="bubble-meta">
-              <div>💰 {selectedJob.salary}</div>
-              <div>📍 {selectedJob.distance.toFixed(1)} كم</div>
+            <div className="bubble-header">
+              <h3>{selectedJob.title}</h3>
+              <span className="bubble-type">
+                {selectedJob.employmentType === 'full-time' ? '🏢 دوام كامل' : '⏰ جزئي'}
+              </span>
             </div>
-            <button className="btn-apply-bubble">تقديم الطلب</button>
+            
+            <p className="bubble-company">{selectedJob.company}</p>
+            <p className="bubble-category">📂 {selectedJob.category}</p>
+            
+            <div className="bubble-divider"></div>
+            
+            <div className="bubble-meta">
+              <div className="meta-item">
+                <span className="label">💰</span>
+                <span className="value">{selectedJob.salary} USD</span>
+              </div>
+              <div className="meta-item">
+                <span className="label">📍</span>
+                <span className="value">
+                  {jobsWithDistance.find(j => j.id === selectedJob.id)?.distance.toFixed(1) || '?'} كم
+                </span>
+              </div>
+            </div>
+            
+            <p className="bubble-description">{selectedJob.description}</p>
+            
+            <div className="bubble-actions">
+              <button className="btn-save-bubble">❤️ حفظ</button>
+              <button className="btn-apply-bubble">تقديم الطلب</button>
+            </div>
           </div>
         </div>
       )}

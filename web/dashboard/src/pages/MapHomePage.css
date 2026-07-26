@@ -305,6 +305,12 @@
   font-weight: 500;
 }
 
+.job-category {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+}
+
 .job-meta {
   display: flex;
   justify-content: space-between;
@@ -349,7 +355,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   z-index: 200;
-  max-width: 300px;
+  max-width: 320px;
   animation: slideInRight var(--duration-normal) ease-out;
 }
 
@@ -379,6 +385,7 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-light);
+  z-index: 10;
 }
 
 .bubble-close:hover {
@@ -387,43 +394,118 @@
 
 .bubble-content {
   padding: var(--spacing-lg);
-  padding-top: var(--spacing-2xl);
 }
 
-.bubble-content h3 {
-  margin: 0 0 var(--spacing-sm) 0;
+.bubble-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.bubble-header h3 {
+  margin: 0;
   font-size: var(--font-size-base);
   color: var(--color-text);
   font-weight: 700;
+  flex: 1;
+}
+
+.bubble-type {
+  background: #bee3f8;
+  color: #2c5282;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .bubble-company {
-  margin: 0 0 var(--spacing-md) 0;
+  margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-primary);
   font-weight: 600;
+}
+
+.bubble-category {
+  margin: var(--spacing-xs) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+}
+
+.bubble-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--spacing-md) 0;
 }
 
 .bubble-meta {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
+  margin-bottom: var(--spacing-md);
 }
 
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.meta-item .label {
+  font-size: var(--font-size-lg);
+  flex: 0 0 auto;
+}
+
+.meta-item .value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.meta-item .value:first-of-type {
+  color: var(--color-success);
+}
+
+.bubble-description {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  line-height: var(--line-height-relaxed);
+}
+
+.bubble-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.btn-save-bubble,
 .btn-apply-bubble {
-  width: 100%;
-  padding: var(--spacing-md);
-  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
-  color: white;
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   transition: all var(--duration-fast);
+}
+
+.btn-save-bubble {
+  background: var(--color-bg-alt);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-save-bubble:hover {
+  background: var(--color-border);
+}
+
+.btn-apply-bubble {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
+  color: white;
 }
 
 .btn-apply-bubble:hover {
