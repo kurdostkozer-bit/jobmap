@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { OnboardingPage } from './OnboardingPage';
@@ -17,6 +17,35 @@ L.Icon.Default.mergeOptions({
   iconUrl: require('leaflet/dist/images/marker-icon.png'),
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
+
+/**
+ * Map Events Component - Properly handles map movement with useMap hook
+ */
+function MapEvents({ onMapMove, onZoom }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (!map) return;
+    
+    const handleMoveEnd = () => {
+      onMapMove?.();
+    };
+    
+    const handleZoom = () => {
+      onZoom?.();
+    };
+    
+    map.on('moveend', handleMoveEnd);
+    map.on('zoomend', handleZoom);
+    
+    return () => {
+      map.off('moveend', handleMoveEnd);
+      map.off('zoomend', handleZoom);
+    };
+  }, [map, onMapMove, onZoom]);
+  
+  return null;
+}
 
 /**
  * Map Core Engine - P1.5 with P2-A Marker Engine
@@ -86,6 +115,19 @@ export const MapHomePage = () => {
            Math.abs(sw.lat - oldSw.lat) > threshold ||
            Math.abs(sw.lng - oldSw.lng) > threshold;
   }, []);
+
+  // Auto-search on first load when bounds become available
+  useEffect(() => {
+    // Wait for map to initialize and bounds to be set
+    if (mapRef.current && mapBounds && !jobs.length && !isLoading) {
+      const timer = setTimeout(() => {
+        console.log('First load: Auto-searching initial bounds...');
+        handleSearchThisArea();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mapBounds, jobs.length, isLoading, handleSearchThisArea]);
 
   // Check onboarding status
   useEffect(() => {
@@ -331,9 +373,9 @@ export const MapHomePage = () => {
             zoom={mapZoom}
             style={{ width: '100%', height: '100%' }}
             className="leaflet-map"
-            onMoveend={handleMapMove}
-            onZoomend={handleMapMove}
           >
+            <MapEvents onMapMove={handleMapMove} onZoom={handleMapMove} />
+            
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
