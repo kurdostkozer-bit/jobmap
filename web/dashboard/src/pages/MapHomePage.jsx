@@ -165,7 +165,8 @@ export const MapHomePage = () => {
     setError(null);
     
     // Call real API
-    fetch('/api/jobs/search/bounds', {
+    const apiUrl = process.env.REACT_APP_API_URL || 'https://jobmap-backend-57v5.onrender.com/api';
+    fetch(`${apiUrl}/jobs/search/bounds`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
