@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Applicants.css';
+import { ApplicantModal } from '../ApplicantModal/ApplicantModal';
 
 export const Applicants = () => {
   const [applicants, setApplicants] = useState([]);
@@ -10,6 +11,7 @@ export const Applicants = () => {
   const [itemsPerPage] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApplicant, setSelectedApplicant] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Mock applicants data
   useEffect(() => {
