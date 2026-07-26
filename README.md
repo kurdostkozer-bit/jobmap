@@ -49,7 +49,7 @@
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Running the Application
 
 ### Prerequisites
 - Node.js 18+
@@ -74,69 +74,48 @@ npm run migration:run
 
 # Start server (development)
 npm run dev
-
-# OR production build
-npm run build
-npm run start
 ```
 
 Backend will run on: **http://localhost:3000**
 
-### 2. Test Backend APIs
+### 2. Start Frontend
+
+**React Dashboard:**
+```bash
+cd web/dashboard
+
+# Option A: Quick Start (No npm install needed)
+# Open: file:///path/to/web/dashboard/public/app.html
+
+# Option B: Full development
+npm install
+npm start  # runs on http://localhost:3001
+```
+
+**Flutter Mobile:**
+```bash
+cd mobile/flutter_app
+flutter pub get
+flutter run
+```
+
+### 3. Test Backend
 
 ```bash
-# Register new user
+# Register
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email":"test@example.com",
     "password":"Password123!",
     "firstName":"Test",
-    "lastName":"User",
-    "role":"seeker"
+    "lastName":"User"
   }'
 
 # Login
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Password123!"}'
-
-# Get profile (with token)
-curl -X GET http://localhost:3000/api/auth/me \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### 3. Run Flutter App
-
-```bash
-cd mobile/flutter_app
-
-# Get dependencies
-flutter pub get
-
-# Run on emulator or device
-flutter run
-```
-
-### 4. Test React Dashboard
-
-**Option A: Standalone HTML (Recommended for Quick Testing)**
-```
-1. Open: file:///path/to/web/dashboard/public/app.html
-2. No npm required, works immediately
-```
-
-**Option B: Full React Build**
-```bash
-cd web/dashboard
-
-# Install dependencies (takes ~2-3 minutes)
-npm install
-
-# Start dev server
-npm start
-
-# Opens http://localhost:3000
 ```
 
 ---
