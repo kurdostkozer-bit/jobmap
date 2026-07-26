@@ -13,55 +13,46 @@
 import L from 'leaflet';
 
 /**
- * Creates a Leaflet DivIcon for a job marker
+ * Creates a Leaflet DivIcon for a job marker with green checkmark pin
  * @param {number} salaryMin - Minimum salary for color coding
  * @param {boolean} isSelected - Whether this marker is currently selected
  * @returns {L.Icon} Leaflet icon
  */
 export const createJobMarkerIcon = (salaryMin, isSelected = false) => {
-  // Color coding by salary
-  let color, bgColor;
-  
-  if (salaryMin > 5000) {
-    color = '#667eea';
-    bgColor = '#e0e7ff';
-  } else if (salaryMin > 3000) {
-    color = '#48bb78';
-    bgColor = '#f0fdf4';
-  } else {
-    color = '#ed8936';
-    bgColor = '#fffbeb';
-  }
+  // Green checkmark pin icon (SVG)
+  const checkmarkPinSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" width="40" height="50">
+      <!-- Pin body -->
+      <path d="M32 2 C18 2, 8 12, 8 26 C8 42, 32 78, 32 78 C32 78, 56 42, 56 26 C56 12, 46 2, 32 2" 
+            fill="#22c55e" stroke="white" stroke-width="2"/>
+      <!-- Checkmark -->
+      <g transform="translate(32, 24)">
+        <polyline points="-8,-2 -2,4 8,-8" 
+                  stroke="white" stroke-width="3" fill="none" 
+                  stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </svg>
+  `;
 
   // Highlight if selected
-  const borderWidth = isSelected ? '4px' : '3px';
   const boxShadow = isSelected
-    ? '0 4px 12px rgba(102, 126, 234, 0.5)'
-    : '0 2px 8px rgba(0, 0, 0, 0.2)';
+    ? '0 4px 12px rgba(34, 197, 94, 0.6)'
+    : '0 2px 8px rgba(0, 0, 0, 0.3)';
 
   return L.divIcon({
     html: `
       <div style="
-        background: ${bgColor};
-        border: ${borderWidth} solid ${color};
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 18px;
-        cursor: pointer;
-        box-shadow: ${boxShadow};
+        filter: drop-shadow(${isSelected ? '0 4px 12px rgba(34, 197, 94, 0.6)' : '0 2px 8px rgba(0, 0, 0, 0.3)'});
+        transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
+        transition: transform 0.2s ease;
       ">
-        💼
+        ${checkmarkPinSvg}
       </div>
     `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
-    className: 'custom-job-marker',
+    iconSize: [40, 50],
+    iconAnchor: [20, 50],
+    popupAnchor: [0, -50],
+    className: 'custom-job-marker-checkmark',
   });
 };
 
