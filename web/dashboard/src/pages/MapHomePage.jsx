@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { OnboardingPage } from './OnboardingPage';
 import './MapHomePage.css';
 
 // Fix Leaflet marker icons
@@ -49,6 +50,7 @@ export const MapHomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   // Mock jobs data with Iraq coordinates
   const allJobs = useMemo(() => [
@@ -138,6 +140,14 @@ export const MapHomePage = () => {
     },
   ], []);
 
+  // Check if user already completed onboarding
+  useEffect(() => {
+    const locationGranted = localStorage.getItem('jobmap_location_granted');
+    if (locationGranted === 'true') {
+      setShowOnboarding(false);
+    }
+  }, []);
+
   // Initialize map
   useEffect(() => {
     setIsLoading(true);
@@ -164,6 +174,23 @@ export const MapHomePage = () => {
 
     setFilteredJobs(result);
   }, [searchTerm, selectedLocation, allJobs]);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = (location) => {
+    console.log('Onboarding complete:', location);
+    setShowOnboarding(false);
+    
+    // Save to localStorage for future visits
+    localStorage.setItem('jobmap_location_granted', location.granted);
+    if (location.granted) {
+      localStorage.setItem('jobmap_last_location', JSON.stringify(location));
+    }
+  };
+
+  // If onboarding is not complete, show it (AFTER all hooks)
+  if (showOnboarding) {
+    return <OnboardingPage onComplete={handleOnboardingComplete} />;
+  }
 
   const locations = [...new Set(allJobs.map(job => job.location))];
 
