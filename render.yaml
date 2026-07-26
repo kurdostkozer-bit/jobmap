@@ -6,6 +6,7 @@ services:
     plan: free
     buildCommand: cd backend && rm -rf node_modules && npm ci && npm run build
     startCommand: node dist/main.js
+    preDeployCommand: cd backend && npm run typeorm migration:run
     envVars:
       - key: NODE_ENV
         value: production
