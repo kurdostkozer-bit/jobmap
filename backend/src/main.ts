@@ -44,12 +44,19 @@ async function bootstrap() {
   // Global interceptors
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  // Support root path checks from platforms like Render
+  app.use((req, res, next) => {
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.path === '/') {
+      if (req.method === 'HEAD') {
+        return res.sendStatus(200);
+      }
+      return res.status(200).json({ status: 'ok', message: 'JobMap Backend is running' });
+    }
+    return next();
+  });
+
   // Global prefix
   app.setGlobalPrefix('api');
-
-  // Support root path checks from platforms like Render
-  app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'JobMap Backend is running' }));
-  app.head('/', (req, res) => res.sendStatus(200));
 
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT);
