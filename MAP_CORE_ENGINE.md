@@ -1,10 +1,12 @@
-# P1 - Map Core Engine
+# P1 - Map Core Engine (Enhanced)
 
 ## 🗺️ المبدأ الأساسي
 
-**الخريطة هي مصدر الحقيقة الوحيد (Map Bounds = Source of Truth)**
+**الخريطة هي مصدر الحقيقة للوظائف المعروضة (Map Bounds = Source of Truth for Jobs)**
 
-جميع البيانات المعروضة تعتمد على حدود الخريطة الحالية فقط.
+جميع البيانات المعروضة من الوظائف تعتمد على حدود الخريطة الحالية فقط.
+
+ملاحظة: بيانات أخرى (ملف شخصي، إشعارات، شركات) لا تعتمد على الخريطة.
 
 ---
 
@@ -123,32 +125,55 @@ Count updates automatically
 
 ---
 
-## 📍 Job Data Structure
+## 📍 Job Data Structure (Extended Model)
 
 Each job MUST have:
 
 ```javascript
 {
+  // Core Identifiers
   id: number,
-  latitude: number,        // NOT city name
-  longitude: number,       // NOT city name
+  
+  // Geolocation (NO city names!)
+  latitude: number,
+  longitude: number,
+  
+  // Primary Info
   company: string,
   title: string,
-  salary: string,          // "6000-8000"
-  salaryMin: number,       // Used for marker color
-  type: string,            // "full-time" or "part-time"
-  createdAt: ISO8601,      // "2024-01-15T10:30:00Z"
-  distance?: number        // Calculated on client
+  
+  // Compensation
+  salary: string,              // "6000-8000" (display)
+  salaryMin: number,           // 6000 (for calculations)
+  salaryMax: number,           // 8000 (for calculations)
+  
+  // Classification (ready for P3 filters)
+  employmentType: string,      // "full-time", "part-time", "contract"
+  category: string,            // "IT", "Design", "Healthcare", "Engineering"
+  status: string,              // "active", "expired", "filled"
+  
+  // Timestamps
+  createdAt: ISO8601,          // "2024-01-15T10:30:00Z"
+  updatedAt: ISO8601,          // "2024-01-15T10:30:00Z"
+  
+  // Extended Info
+  description: string,         // Job description
+  skills: string[],           // Required skills
+  applicants: number,         // Applicant count
+  
+  // Client-calculated
+  distance?: number           // Calculated using Haversine
 }
 ```
 
-### Why latitude/longitude?
+### Why This Structure?
 
-- Eliminates city name dependency
-- Supports precise geolocation
-- Enables bounds-based queries
-- Works for any geographic region
-- Scales to any granularity
+- **salaryMin/Max**: Separate from display for filtering (P3)
+- **employmentType**: Replaces simple "type" for future filters
+- **category**: Enables advanced filtering and recommendations (P3, P8)
+- **status**: Prevents showing expired/filled jobs
+- **timestamps**: For sorting by latest, expiry checks
+- **skills[]**: For future AI matching (P8)
 
 ---
 
@@ -242,13 +267,26 @@ Each job MUST have:
 
 ### POST /api/jobs/search-bounds
 
-**Request:**
+**Request Structure (v1 - Ready for future expansions):**
 ```json
 {
-  "north": 34.5,
-  "south": 32.0,
-  "east": 45.0,
-  "west": 43.0
+  "bounds": {
+    "north": 34.5,
+    "south": 32.0,
+    "east": 45.0,
+    "west": 43.0
+  },
+  "zoom": 12,
+  "center": {
+    "lat": 33.3136,
+    "lng": 44.3615
+  },
+  "filters": {
+    "employmentType": ["full-time"],
+    "category": ["IT", "Design"],
+    "salaryMin": 3000,
+    "salaryMax": 10000
+  }
 }
 ```
 
@@ -257,6 +295,10 @@ Each job MUST have:
 {
   "success": true,
   "count": 42,
+  "stats": {
+    "total": 42,
+    "filtered": 42
+  },
   "jobs": [
     {
       "id": 1,
@@ -266,13 +308,28 @@ Each job MUST have:
       "title": "Senior Developer",
       "salary": "6000-8000",
       "salaryMin": 6000,
-      "type": "full-time",
-      "createdAt": "2024-01-15T10:30:00Z"
+      "salaryMax": 8000,
+      "employmentType": "full-time",
+      "category": "IT",
+      "status": "active",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-15T10:30:00Z",
+      "description": "نبحث عن مطور React خبير",
+      "skills": ["React", "Node.js", "TypeScript"],
+      "applicants": 12
     },
     ...
   ]
 }
 ```
+
+### API Design Rationale
+
+- **Single `bounds` object**: Easy to extend with new fields
+- **Optional `zoom` & `center`**: For client-side debugging/analytics
+- **`filters` object**: Ready for P3 without API restructuring
+- **Empty filters**: Still works, returns all jobs in bounds
+- **`stats` response**: Separate from jobs for easy UI updates
 
 ---
 
@@ -361,25 +418,51 @@ Updates when:
 
 ---
 
-## 🚀 Next Steps
+## 🚀 Next Steps (Roadmap)
 
-### P2 - Clustering
+### ✅ P1 — Map Core Engine
+- Onboarding with GPS
+- Bounds-based search (north/south/east/west)
+- Duplicate request prevention
+- Job bubble (enhanced)
+- My Location button
+
+### P2 — Marker Clustering
 - Group nearby jobs
-- Show count (📍 25)
-- Expand on zoom
+- Show count badge (📍 25)
+- Expand on zoom level increase
 
-### P3 - Heat Map
+### P3 — Advanced Filters
+- Filter by employmentType
+- Filter by category
+- Filter by salary range
+- Filter UI in sidebar
+- Update markers in real-time
+
+### P4 — Route Navigation
+- Calculate travel time (by car/walk)
+- Show on map
+- Open in Google Maps
+
+### P5 — Heat Map
 - Color intensity = job density
 - Show hotspots
+- Toggle on/off
 
-### P4 - Route Navigation
-- Calculate travel time
-- Show on map
+### P6 — Salary Layer
+- Color map by average salary
+- Show salary ranges
+- Toggle on/off
 
-### P5 - Advanced Filters
-- Salary layer
-- Distance rings
-- Job type filter
+### P7 — Real-time Job Updates
+- WebSocket for new jobs
+- Animation on new marker
+- Notification badge
+
+### P8 — AI Recommendations
+- Profile-based job matching
+- Smart sorting
+- Personalized search hints
 
 ---
 
