@@ -65,6 +65,11 @@ export class JobsController {
     return await this.jobsService.findByLocation(lat, lng, radius);
   }
 
+  @Post('search/bounds')
+  async searchByBounds(@Body() boundsQuery: any): Promise<any> {
+    return await this.jobsService.searchByBounds(boundsQuery);
+  }
+
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   async update(

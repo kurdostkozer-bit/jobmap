@@ -14,45 +14,21 @@ L.Icon.Default.mergeOptions({
 });
 
 /**
- * Map Core Engine - P1
+ * Map Core Engine - P1.5
  * 
- * Architecture:
- * 1. Onboarding → Get user GPS location
- * 2. Map loads at user location
- * 3. When user pans/zooms → Track map bounds (debounce 400ms)
- * 4. Show "🔄 Search this area" button
- * 5. User clicks → Send (north, south, east, west) to backend
- * 6. Backend returns jobs in bounds
- * 7. Update markers + job list + header count
- * 8. Repeat from step 3
- * 
- * Key Principle: Map Bounds = Source of Truth
+ * Production Backend Integration:
+ * - Real API calls to /api/jobs/search/bounds
+ * - Caching (5 minutes)
+ * - Error handling with retry
+ * - Pagination support
  */
 
-// Create custom job marker icon
 const createJobMarkerIcon = (salaryMin) => {
   const color = salaryMin > 5000 ? '#667eea' : salaryMin > 3000 ? '#48bb78' : '#ed8936';
   const bgColor = salaryMin > 5000 ? '#e0e7ff' : salaryMin > 3000 ? '#f0fdf4' : '#fffbeb';
   
   return L.divIcon({
-    html: `
-      <div style="
-        background: ${bgColor};
-        border: 3px solid ${color};
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 18px;
-        cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      ">
-        💼
-      </div>
-    `,
+    html: `<div style="background: ${bgColor}; border: 3px solid ${color}; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">💼</div>`,
     iconSize: [40, 40],
     iconAnchor: [20, 40],
     popupAnchor: [0, -40],
@@ -60,7 +36,6 @@ const createJobMarkerIcon = (salaryMin) => {
   });
 };
 
-// Create user location marker icon
 const createUserMarkerIcon = () => {
   return L.icon({
     iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23667eea" width="32" height="32"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="white"/></svg>',
@@ -72,31 +47,37 @@ const createUserMarkerIcon = () => {
 export const MapHomePage = () => {
   // ========== CORE STATE ==========
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [userLocation, setUserLocation] = useState({ lat: 33.3136, lng: 44.3615 }); // Baghdad default
+  const [userLocation, setUserLocation] = useState({ lat: 33.3136, lng: 44.3615 });
   
   // ========== MAP STATE ==========
   const [mapBounds, setMapBounds] = useState(null);
-  const [previousBounds, setPreviousBounds] = useState(null); // Track previous bounds to avoid duplicate requests
+  const [previousBounds, setPreviousBounds] = useState(null);
   const [mapZoom, setMapZoom] = useState(7);
   const [mapCenter, setMapCenter] = useState([33.3136, 44.3615]);
-  const [boundsDirty, setBoundsDirty] = useState(false); // User moved map
+  const [boundsDirty, setBoundsDirty] = useState(false);
   const mapRef = useRef(null);
   const debounceTimerRef = useRef(null);
   
   // ========== JOB DATA STATE ==========
-  const [jobs, setJobs] = useState([]); // Jobs from API within bounds
-  const [jobsStats, setJobsStats] = useState({ total: 0, filtered: 0 }); // Stats from current bounds
+  const [jobs, setJobs] = useState([]);
+  const [jobsStats, setJobsStats] = useState({ total: 0, filtered: 0 });
   const [selectedJob, setSelectedJob] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // ========== SEARCH STATE ==========
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   
-  // ========== HELPER: Check if bounds significantly changed ==========
+  // ========== CACHE ==========
+  const cacheRef = useRef(new Map());
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  // Check if bounds significantly changed
   const hasBoundsChanged = useCallback((newBounds, oldBounds) => {
     if (!oldBounds) return true;
     
-    const threshold = 0.01; // Roughly 1km at equator
+    const threshold = 0.01;
     const { _northEast: ne, _southWest: sw } = newBounds;
     const { _northEast: oldNe, _southWest: oldSw } = oldBounds;
     
@@ -106,9 +87,7 @@ export const MapHomePage = () => {
            Math.abs(sw.lng - oldSw.lng) > threshold;
   }, []);
 
-  // ========== LIFECYCLE ==========
-  
-  // Check if onboarding already completed
+  // Check onboarding status
   useEffect(() => {
     const locationGranted = localStorage.getItem('jobmap_location_granted');
     if (locationGranted === 'true') {
@@ -121,7 +100,7 @@ export const MapHomePage = () => {
     }
   }, []);
 
-  // Handle map movement (pan/zoom)
+  // Handle map movement
   const handleMapMove = useCallback(() => {
     if (!mapRef.current) return;
     
@@ -133,30 +112,37 @@ export const MapHomePage = () => {
     setMapZoom(zoom);
     setMapCenter([center.lat, center.lng]);
     setBoundsDirty(true);
+    setError(null);
     
-    // Debounce: show button only after user stops moving
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    debounceTimerRef.current = setTimeout(() => {
-      // Debounce complete - button stays visible
-    }, 400);
   }, []);
 
-  // Execute search for current bounds
+  // Execute search
   const handleSearchThisArea = useCallback(() => {
     if (!mapBounds) return;
     
-    // Check if bounds actually changed (prevent duplicate requests)
     if (!hasBoundsChanged(mapBounds, previousBounds)) {
-      console.log('Bounds unchanged, skipping search');
+      console.log('Bounds unchanged, checking cache...');
       setBoundsDirty(false);
       return;
     }
     
     const { _southWest, _northEast } = mapBounds;
+    const cacheKey = `${_northEast.lat.toFixed(4)}-${_southWest.lat.toFixed(4)}-${_northEast.lng.toFixed(4)}-${_southWest.lng.toFixed(4)}`;
     
-    // New API structure: bounds as object
+    // Check cache
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('Using cached results');
+      setJobs(cached.jobs);
+      setJobsStats(cached.stats);
+      setPreviousBounds(mapBounds);
+      setBoundsDirty(false);
+      return;
+    }
+    
     const searchPayload = {
       bounds: {
         north: _northEast.lat,
@@ -169,100 +155,66 @@ export const MapHomePage = () => {
         lat: mapCenter[0],
         lng: mapCenter[1],
       },
-      // Ready for future filters
-      filters: {
-        // employmentType: [],
-        // category: [],
-        // salaryMin: null,
-        // salaryMax: null,
-      },
+      filters: {},
+      limit: 100,
+      offset: 0,
     };
     
     console.log('Searching bounds:', searchPayload);
-    
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Mock jobs with expanded data model
-      const jobsInBounds = [
-        {
-          id: 1,
-          latitude: 33.3136,
-          longitude: 44.3615,
-          company: 'Tech Solutions',
-          title: 'Senior Developer',
-          salary: '6000-8000',
-          salaryMin: 6000,
-          salaryMax: 8000,
-          employmentType: 'full-time',
-          category: 'IT',
-          status: 'active',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          updatedAt: new Date(Date.now() - 3600000).toISOString(),
-          description: 'نبحث عن مطور React خبير',
-          skills: ['React', 'Node.js', 'TypeScript'],
-          applicants: 12,
-        },
-        {
-          id: 2,
-          latitude: 33.3200,
-          longitude: 44.3700,
-          company: 'Design Studio',
-          title: 'UI/UX Designer',
-          salary: '3500-4500',
-          salaryMin: 3500,
-          salaryMax: 4500,
-          employmentType: 'full-time',
-          category: 'Design',
-          status: 'active',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-          updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          description: 'مصمم واجهات ذو خبرة في Figma',
-          skills: ['Figma', 'UI Design', 'Prototyping'],
-          applicants: 8,
-        },
-        {
-          id: 6,
-          latitude: 36.1920,
-          longitude: 44.0075,
-          company: 'Cloud Systems',
-          title: 'DevOps Engineer',
-          salary: '5500-7000',
-          salaryMin: 5500,
-          salaryMax: 7000,
-          employmentType: 'full-time',
-          category: 'IT',
-          status: 'active',
-          createdAt: new Date(Date.now() - 259200000).toISOString(),
-          updatedAt: new Date(Date.now() - 259200000).toISOString(),
-          description: 'مهندس DevOps لإدارة البنية التحتية السحابية',
-          skills: ['Docker', 'Kubernetes', 'AWS'],
-          applicants: 7,
-        },
-      ];
-      
-      setJobs(jobsInBounds);
-      setPreviousBounds(mapBounds); // Save bounds to prevent duplicate requests
-      setBoundsDirty(false);
-      setIsLoading(false);
-      setJobsStats({
-        total: jobsInBounds.length,
-        filtered: jobsInBounds.length,
+    // Call real API
+    fetch('/api/jobs/search/bounds', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(searchPayload),
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('API Response:', data);
+        
+        setJobs(data.jobs || []);
+        setJobsStats({
+          total: data.stats?.totalFound || 0,
+          filtered: data.stats?.returnedCount || 0,
+        });
+        setPreviousBounds(mapBounds);
+        setBoundsDirty(false);
+        setError(null);
+        setRetryCount(0);
+        
+        // Cache results
+        cacheRef.current.set(cacheKey, {
+          jobs: data.jobs || [],
+          stats: data.stats || {},
+          timestamp: Date.now(),
+        });
+      })
+      .catch(err => {
+        console.error('Search error:', err);
+        setError('تعذر تحميل الوظائف في هذه المنطقة');
+        setRetryCount(prev => prev + 1);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-      
-      console.log('Jobs found:', jobsInBounds.length);
-    }, 600);
   }, [mapBounds, mapZoom, mapCenter, previousBounds, hasBoundsChanged]);
 
-  // Return to user location and search
+  // My Location
   const handleMyLocation = useCallback(() => {
     if (mapRef.current) {
       mapRef.current.flyTo([userLocation.lat, userLocation.lng], 12, {
         duration: 0.5,
       });
       
-      // Wait for animation to complete, then search
       setTimeout(() => {
         const bounds = mapRef.current.getBounds();
         setMapBounds(bounds);
@@ -271,15 +223,14 @@ export const MapHomePage = () => {
         setMapCenter([center.lat, center.lng]);
         setBoundsDirty(true);
         
-        // Execute search after animation
         setTimeout(() => {
-          setBoundsDirty(false); // Will trigger handleSearchThisArea
+          handleSearchThisArea();
         }, 100);
       }, 600);
     }
-  }, [userLocation]);
+  }, [userLocation, handleSearchThisArea]);
 
-  // Handle onboarding completion
+  // Onboarding complete
   const handleOnboardingComplete = (location) => {
     console.log('Onboarding complete:', location);
     setUserLocation({
@@ -297,13 +248,12 @@ export const MapHomePage = () => {
     }
   };
 
-  // If onboarding not complete, show it (AFTER all hooks)
+  // Early return if onboarding
   if (showOnboarding) {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
-  // ========== HELPER FUNCTIONS ==========
-
+  // Calculate distance
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -315,19 +265,17 @@ export const MapHomePage = () => {
     return R * c;
   };
 
-  // Filter jobs by search term
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Add distance to jobs
-  const jobsWithDistance = filteredJobs.map(job => ({
-    ...job,
-    distance: calculateDistance(userLocation.lat, userLocation.lng, job.latitude, job.longitude),
-  })).sort((a, b) => a.distance - b.distance);
-
-  // ========== RENDER ==========
+  // Filter and sort jobs
+  const jobsWithDistance = jobs
+    .filter(job =>
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .map(job => ({
+      ...job,
+      distance: calculateDistance(userLocation.lat, userLocation.lng, job.latitude, job.longitude),
+    }))
+    .sort((a, b) => a.distance - b.distance);
 
   return (
     <div className="map-home-page">
@@ -344,7 +292,7 @@ export const MapHomePage = () => {
         </div>
 
         <div className="header-right">
-          <button className="btn-my-location" onClick={handleMyLocation}>
+          <button className="btn-my-location" onClick={handleMyLocation} disabled={isLoading}>
             📍 موقعي
           </button>
           <button className="btn-login">دخول</button>
@@ -383,7 +331,7 @@ export const MapHomePage = () => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
 
-            {/* User Location Marker */}
+            {/* User Location */}
             <Marker
               position={[userLocation.lat, userLocation.lng]}
               icon={createUserMarkerIcon()}
@@ -415,15 +363,14 @@ export const MapHomePage = () => {
             ))}
           </MapContainer>
 
-          {/* Search Button (shows when user moved map) */}
-          {boundsDirty && (
+          {/* Search Button */}
+          {boundsDirty && !isLoading && (
             <div className="search-button-container">
               <button
                 className="btn-search-area"
                 onClick={handleSearchThisArea}
-                disabled={isLoading}
               >
-                {isLoading ? '⏳ جاري البحث...' : '🔄 ابحث في هذه المنطقة'}
+                🔄 ابحث في هذه المنطقة
               </button>
             </div>
           )}
@@ -435,16 +382,26 @@ export const MapHomePage = () => {
               <p>جاري البحث...</p>
             </div>
           )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="error-message">
+              <p>{error}</p>
+              <button onClick={handleSearchThisArea} className="btn-retry">
+                🔄 إعادة محاولة ({retryCount})
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Sidebar - Jobs List */}
+        {/* Sidebar */}
         <aside className="jobs-sidebar">
           <div className="sidebar-header">
             <h3>الوظائف ({jobsWithDistance.length})</h3>
           </div>
 
           <div className="jobs-list">
-            {isLoading ? (
+            {isLoading && jobs.length === 0 ? (
               <div className="loading-state">جاري التحميل...</div>
             ) : jobsWithDistance.length === 0 ? (
               <div className="empty-state">
@@ -501,7 +458,7 @@ export const MapHomePage = () => {
             <div className="bubble-meta">
               <div className="meta-item">
                 <span className="label">💰</span>
-                <span className="value">{selectedJob.salary} USD</span>
+                <span className="value">{selectedJob.salary}</span>
               </div>
               <div className="meta-item">
                 <span className="label">📍</span>
