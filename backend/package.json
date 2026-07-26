@@ -15,6 +15,7 @@
     "migration:create": "typeorm migration:create",
     "migration:run": "typeorm migration:run -d src/database/datasource.ts",
     "migration:revert": "typeorm migration:revert -d src/database/datasource.ts",
+    "migration:register": "ts-node src/database/register-migration.ts",
     "seed:locations": "ts-node src/database/seeds/seed-locations.ts",
     "seed:p3": "ts-node src/database/seeds/seed-p3-discovery.ts"
   },
