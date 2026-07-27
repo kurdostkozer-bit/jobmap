@@ -13,12 +13,13 @@
     "declaration": false,
     "declarationMap": false,
     "sourceMap": false,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
+    "baseUrl": "./src",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {
-      "@/*": ["src/*"],
-      "@shared/*": ["src/shared/*"]
+      "@/*": ["*"],
+      "@shared/*": ["shared/*"]
     }
   },
   "include": ["src/**/*"],
