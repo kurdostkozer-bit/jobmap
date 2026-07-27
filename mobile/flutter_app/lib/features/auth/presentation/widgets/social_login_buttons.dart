@@ -14,40 +14,6 @@ class SocialLoginButtons extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<AsyncValue<Map<String, dynamic>>>(
-      googleSignInProvider,
-      (previous, next) {
-        next.whenData((data) {
-          if (data.isNotEmpty && data.containsKey('accessToken')) {
-            onSuccess?.call();
-          }
-        });
-        next.whenError((error, st) {
-          onError?.call(error.toString());
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ في تسجيل الدخول: $error')),
-          );
-        });
-      },
-    );
-
-    ref.listen<AsyncValue<Map<String, dynamic>>>(
-      facebookSignInProvider,
-      (previous, next) {
-        next.whenData((data) {
-          if (data.isNotEmpty && data.containsKey('accessToken')) {
-            onSuccess?.call();
-          }
-        });
-        next.whenError((error, st) {
-          onError?.call(error.toString());
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ في تسجيل الدخول: $error')),
-          );
-        });
-      },
-    );
-
     final googleState = ref.watch(googleSignInProvider);
     final facebookState = ref.watch(facebookSignInProvider);
 
@@ -66,7 +32,19 @@ class SocialLoginButtons extends ConsumerWidget {
               onPressed: googleState.isLoading
                   ? null
                   : () {
-                      ref.read(googleSignInProvider.notifier).signIn();
+                      ref.read(googleSignInProvider.notifier).signIn().then((_) {
+                        final state = ref.read(googleSignInProvider);
+                        state.whenData((data) {
+                          if (data.isNotEmpty && data.containsKey('accessToken')) {
+                            onSuccess?.call();
+                          }
+                        });
+                      }).catchError((error) {
+                        onError?.call(error.toString());
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('خطأ: $error')),
+                        );
+                      });
                     },
               icon: googleState.isLoading
                   ? SizedBox(
@@ -93,7 +71,19 @@ class SocialLoginButtons extends ConsumerWidget {
               onPressed: facebookState.isLoading
                   ? null
                   : () {
-                      ref.read(facebookSignInProvider.notifier).signIn();
+                      ref.read(facebookSignInProvider.notifier).signIn().then((_) {
+                        final state = ref.read(facebookSignInProvider);
+                        state.whenData((data) {
+                          if (data.isNotEmpty && data.containsKey('accessToken')) {
+                            onSuccess?.call();
+                          }
+                        });
+                      }).catchError((error) {
+                        onError?.call(error.toString());
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('خطأ: $error')),
+                        );
+                      });
                     },
               icon: facebookState.isLoading
                   ? SizedBox(
