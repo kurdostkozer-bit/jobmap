@@ -1,5 +1,3 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import '../../../../core/services/api_client.dart';
 import '../../domain/models/user_model.dart';
 
@@ -25,12 +23,8 @@ class AuthResponse {
 
 class AuthRemoteDataSource {
   final ApiClient _apiClient;
-  final FlutterSecureStorage _storage;
 
-  AuthRemoteDataSource(
-    this._apiClient,
-    this._storage,
-  );
+  AuthRemoteDataSource(this._apiClient);
 
   Future<AuthResponse> register({
     required String email,

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
@@ -193,7 +193,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     value: selectedRole,
                     isExpanded: true,
                     underline: const SizedBox(),
-                    items: [
+                    items: const [
                       DropdownMenuItem(
                         value: 'seeker',
                         child: Text(

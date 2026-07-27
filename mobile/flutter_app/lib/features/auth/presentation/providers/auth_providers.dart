@@ -41,8 +41,7 @@ final isAuthenticatedProvider = FutureProvider<bool>((ref) async {
 // Remote DataSource
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  final storage = ref.watch(secureStorageProvider);
-  return AuthRemoteDataSource(apiClient, storage);
+  return AuthRemoteDataSource(apiClient);
 });
 
 // Repository
@@ -196,7 +195,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final result = await _repository.refreshToken(currentRefreshToken);
 
       // Update tokens
-      await _storageService.saveAccessToken(result.accessToken ?? '');
+      await _storageService.saveAccessToken(result.accessToken);
       if (result.refreshToken != null) {
         await _storageService.saveRefreshToken(result.refreshToken!);
       }
@@ -239,6 +238,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             firstName: '',
             lastName: '',
             role: 'seeker',
+            createdAt: DateTime.now(),
           ),
         );
       }

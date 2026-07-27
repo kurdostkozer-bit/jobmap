@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 
 class JobMapApp extends StatelessWidget {
-  const JobMapApp({Key? key}) : super(key: key);
+  const JobMapApp({super.key});
 
   @override
   Widget build(BuildContext context) {
