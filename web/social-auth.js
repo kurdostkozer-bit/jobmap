@@ -1,5 +1,5 @@
 // Google Sign-In Configuration
-const GOOGLE_CLIENT_ID = '215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io.apps.googleusercontent.com'; // Web Client ID
 
 // Facebook SDK Configuration
 const FACEBOOK_APP_ID = '1368671672021765';

@@ -29,14 +29,14 @@
 	<key>FacebookDisplayName</key>
 	<string>JobMap Iraq</string>
 	<key>GIDClientID</key>
-	<string>215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io.apps.googleusercontent.com</string>
+	<string>215370690483-5c2419mmapssjn5h1grhtdv9fbstlk6r.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>
 		<string>fbapi20130614</string>
 		<string>fbconnect</string>
 		<string>fbshare</string>
-		<string>com.googleusercontent.apps.215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io</string>
+		<string>com.googleusercontent.apps.215370690483-5c2419mmapssjn5h1grhtdv9fbstlk6r</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
