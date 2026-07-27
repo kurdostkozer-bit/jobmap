@@ -35,14 +35,13 @@ export class SocialAuthService {
       const randomPassword = Math.random().toString(36).substring(2, 15);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-      user = this.usersRepository.create({
-        email: data.email,
-        firstName,
-        lastName,
-        passwordHash: hashedPassword,
-        role: 'seeker',
-        googleId: data.idToken, // Store Google ID token for reference
-      });
+      user = this.usersRepository.create();
+      user.email = data.email;
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.passwordHash = hashedPassword;
+      user.role = 'seeker';
+      user.googleId = data.idToken;
 
       await this.usersRepository.save(user);
     }
@@ -69,15 +68,14 @@ export class SocialAuthService {
       const randomPassword = Math.random().toString(36).substring(2, 15);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
-      user = this.usersRepository.create({
-        email: data.email,
-        firstName,
-        lastName,
-        passwordHash: hashedPassword,
-        role: 'seeker',
-        avatarUrl: data.pictureUrl,
-        facebookId: data.accessToken, // Store Facebook token for reference
-      });
+      user = this.usersRepository.create();
+      user.email = data.email;
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.passwordHash = hashedPassword;
+      user.role = 'seeker';
+      user.avatarUrl = data.pictureUrl;
+      user.facebookId = data.accessToken;
 
       await this.usersRepository.save(user);
     }
