@@ -4,20 +4,26 @@ services:
     env: node
     region: frankfurt
     plan: free
-    buildCommand: cd backend && rm -rf node_modules && npm ci && npm run build
-    startCommand: node dist/main.js
-    preDeployCommand: cd backend && npm run typeorm migration:run
+    buildCommand: cd backend && npm ci && npm run build
+    startCommand: cd backend && npm run migration:run && node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DB_HOST
+        scope: build
+      - key: DB_PORT
+        scope: build
+      - key: DB_USER
+        scope: build
+      - key: DB_PASSWORD
+        scope: build
+      - key: DB_NAME
+        scope: build
 
   - type: static_site
-    name: jobmap-frontend
-    staticPublishPath: web/dashboard/build
-    buildCommand: cd web/dashboard && npm install && npm run build
-    envVars:
-      - key: REACT_APP_API_URL
-        value: https://jobmap-backend-57v5.onrender.com/api
+    name: jobmap-web
+    staticPublishPath: web
+    buildCommand: echo "Static site - no build needed"
     routes:
       - path: /*
         destination: /index.html

@@ -1,5 +1,7 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000/api'; // Change to your backend URL
+const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000/api'
+    : 'https://jobmap-backend-57v5.onrender.com/api';
 
 class AuthService {
     async login(email, password) {
