@@ -5,7 +5,7 @@ services:
     region: frankfurt
     plan: free
     buildCommand: cd backend && npm ci && npm run build
-    startCommand: cd backend && npm run migration:run && node dist/main.js
+    startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
