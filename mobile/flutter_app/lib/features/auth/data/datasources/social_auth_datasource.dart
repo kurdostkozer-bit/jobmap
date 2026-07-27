@@ -67,7 +67,7 @@ class SocialAuthDatasource {
         final response = await dio.post(
           '$apiBaseUrl/auth/social/facebook',
           data: {
-            'accessToken': accessToken.token,
+            'accessToken': accessToken.tokenString,
             'email': userData['email'],
             'displayName': userData['name'],
             'pictureUrl': userData['picture']?['data']?['url'],
