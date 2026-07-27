@@ -7,6 +7,7 @@ class SocialAuthDatasource {
   final String apiBaseUrl;
 
   late final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: '215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
 

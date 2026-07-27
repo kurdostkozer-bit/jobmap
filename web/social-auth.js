@@ -1,8 +1,8 @@
 // Google Sign-In Configuration
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with your Google Client ID
+const GOOGLE_CLIENT_ID = '215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io.apps.googleusercontent.com';
 
 // Facebook SDK Configuration
-const FACEBOOK_APP_ID = '1368671672021765'; // JobMap Iraq Facebook App ID
+const FACEBOOK_APP_ID = '1368671672021765';
 
 class SocialAuthService {
     async loginWithGoogle() {

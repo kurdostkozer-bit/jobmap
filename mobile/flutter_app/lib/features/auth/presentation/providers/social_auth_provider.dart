@@ -13,7 +13,7 @@ final socialAuthDatasourceProvider = Provider((ref) {
   final dio = ref.watch(dioProvider);
   return SocialAuthDatasource(
     dio: dio,
-    apiBaseUrl: 'http://localhost:3000/api',
+    apiBaseUrl: 'http://localhost:3000/api', // Update for production
   );
 });
 

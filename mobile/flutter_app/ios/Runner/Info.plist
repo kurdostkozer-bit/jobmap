@@ -24,6 +24,20 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FacebookAppID</key>
+	<string>1368671672021765</string>
+	<key>FacebookDisplayName</key>
+	<string>JobMap Iraq</string>
+	<key>GIDClientID</key>
+	<string>215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io.apps.googleusercontent.com</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fbapi20130614</string>
+		<string>fbconnect</string>
+		<string>fbshare</string>
+		<string>com.googleusercontent.apps.215370690483-ucqa59t97ggffu4l0ahr0ingrp6cp7io</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
