@@ -1,15 +1,20 @@
 import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { SocialAuthService } from './services/social-auth.service';
 import { JwtGuard } from './guards/jwt.guard';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto, FacebookLoginDto } from './dto/social-login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger('AuthController');
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private socialAuthService: SocialAuthService,
+  ) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -42,5 +47,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() body: { refreshToken: string }) {
     return this.authService.refreshToken(body.refreshToken);
+  }
+
+  @Post('social/google')
+  @HttpCode(HttpStatus.OK)
+  async googleLogin(@Body() googleLoginDto: GoogleLoginDto) {
+    this.logger.log('🔵 Google login endpoint:', { email: googleLoginDto.email });
+    return this.socialAuthService.googleLogin(googleLoginDto);
+  }
+
+  @Post('social/facebook')
+  @HttpCode(HttpStatus.OK)
+  async facebookLogin(@Body() facebookLoginDto: FacebookLoginDto) {
+    this.logger.log('🔵 Facebook login endpoint:', { email: facebookLoginDto.email });
+    return this.socialAuthService.facebookLogin(facebookLoginDto);
   }
 }

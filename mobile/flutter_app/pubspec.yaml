@@ -20,6 +20,8 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   json_serializable: ^6.7.0
   json_annotation: ^4.8.0
+  google_sign_in: ^6.2.0
+  flutter_facebook_auth: ^6.0.0
 
 dev_dependencies:
   flutter_test:

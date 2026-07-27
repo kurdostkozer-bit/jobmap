@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
+import '../widgets/social_login_buttons.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -173,6 +174,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     child: const Text('سجل الآن'),
                   ),
                 ],
+              ),
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 24),
+              SocialLoginButtons(
+                onSuccess: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم التسجيل بنجاح')),
+                  );
+                  // Navigate to home
+                  // Navigator.of(context).pushReplacementNamed('/home');
+                },
+                onError: (error) {
+                  _showError('خطأ: $error');
+                },
               ),
             ],
           ),
